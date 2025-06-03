@@ -29,7 +29,7 @@ app = Flask(__name__)
 # Маршрут для главной страницы
 @app.route('/')
 def home():
-    return "Окак."
+    return "Окак. 1"
 
 @app.route('/question', methods=['GET'])
 def info():
