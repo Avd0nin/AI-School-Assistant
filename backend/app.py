@@ -1,24 +1,24 @@
-from flask import Flask, Response
+from flask import Flask, Response, request, redirect
 import requests
 
 
-class Maker: # класс для генерации конспектов
+class Maker:  # класс для генерации конспектов
     def __init__(self):
         self.url = "https://api.deepseek.com/v1/chat/completions"
         self.api_key = "sk-338c16a44f21420282495748d4f8b729"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
-            }
-    def create(self, subject, klass, theme):
         }
+
+    def create(self, subject, klass, theme):
         data = {
             "model": "deepseek-chat",
             "messages": [
                 {"role": "user", "content": f"отвечай с форматированием html и только по теме вопроса. представь, что ты учитель школьного предмета '{subject}' в {klass} классе. твой ученик хочет подготовится к контрольной работе по теме {theme}. подготовь для него краткий, но ёмкий конспект."}
             ],
             "temperature": 1,  # управление креативностью (0-1)
-            "max_tokens": 1000   # ограничение длины ответа
+            "max_tokens": 2000   # ограничение длины ответа
         }
 
         response = requests.post(self.url, json=data, headers=self.headers)
@@ -31,7 +31,7 @@ main = Maker()
 app = Flask(__name__)
 
 
-# маршрут главной страницы
+# маршрут главной страницы с формой
 @app.route('/')
 def home():
     return '''
@@ -59,39 +59,84 @@ def home():
                     color: #2a7ae2;
                     margin-bottom: 18px;
                 }
-                p {
-                    font-size: 1.15em;
-                    margin-bottom: 10px;
+                .summary-form {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                    margin-top: 30px;
+                }
+                .form-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    text-align: left;
+                }
+                .form-group label {
+                    font-weight: bold;
+                    color: #333;
+                }
+                .form-group input {
+                    padding: 12px 15px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    font-size: 16px;
+                }
+                .submit-btn {
+                    margin-top: 15px;
+                    padding: 14px 20px;
+                    background: #2a7ae2;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                }
+                .submit-btn:hover {
+                    background: #185a9d;
                 }
                 .help-link {
                     display: inline-block;
-                    margin-top: 18px;
-                    padding: 10px 22px;
-                    background: #2a7ae2;
-                    color: #fff;
-                    border-radius: 6px;
+                    margin-top: 25px;
+                    color: #2a7ae2;
                     text-decoration: none;
                     font-weight: bold;
-                    transition: background 0.2s;
                 }
                 .help-link:hover {
-                    background: #185a9d;
+                    text-decoration: underline;
                 }
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>Добро пожаловать!</h1>
-                <p>Это сайт-помощник школьникам нового поколения.</p>
-                <p>Для получения информации об использовании перейдите по ссылке ниже:</p>
-                <a class="help-link" href="/help">Инструкция по использованию</a>
+                <h1>Генератор конспектов</h1>
+                <form action="/make_summary" method="get" class="summary-form">
+                    <div class="form-group">
+                        <label for="subject">Предмет:</label>
+                        <input type="text" id="subject" name="subject" required placeholder="Например: Математика">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="klass">Класс:</label>
+                        <input type="number" id="klass" name="klass" min="1" max="11" required placeholder="От 1 до 11">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="theme">Тема:</label>
+                        <input type="text" id="theme" name="theme" required placeholder="Например: Квадратные уравнения">
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">Сгенерировать конспект</button>
+                </form>
+                <a href="/help" class="help-link">Инструкция по использованию</a>
             </div>
         </body>
     </html>
     '''
 
 
-# тестовый маршрут для генерации изображений, пока что рисует простой квадрат
+# тестовый маршрут для генерации изображений
 @app.route('/square', methods=['GET'])
 def square():
     svg = '''
@@ -105,13 +150,97 @@ def square():
 # маршрут по консультации использования
 @app.route('/help', methods=['GET'])
 def info():
-    return 'чтобы получить конспект, отправьте запрос вида /make_summary/<предмет>/<класс>/<тема>'
+    return '''
+    <html>
+        <head>
+            <title>Помощь</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    line-height: 1.6;
+                }
+                h1 {
+                    color: #2a7ae2;
+                }
+                .back-link {
+                    display: inline-block;
+                    margin-top: 20px;
+                    color: #2a7ae2;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+                .back-link:hover {
+                    text-decoration: underline;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Инструкция по использованию</h1>
+            <p>Этот сервис помогает школьникам готовиться к контрольным работам, генерируя краткие конспекты по заданным темам.</p>
+            
+            <h2>Как использовать:</h2>
+            <ol>
+                <li>На главной странице заполните форму:
+                    <ul>
+                        <li>Укажите школьный предмет (например, "Математика")</li>
+                        <li>Выберите класс (от 1 до 11)</li>
+                        <li>Введите тему для конспекта (например, "Квадратные уравнения")</li>
+                    </ul>
+                </li>
+                <li>Нажмите кнопку "Сгенерировать конспект"</li>
+                <li>Система создаст для вас структурированный конспект по указанной теме</li>
+            </ol>
+            
+            <h2>Примеры запросов:</h2>
+            <ul>
+                <li>Предмет: История, Класс: 8, Тема: Отечественная война 1812 года</li>
+                <li>Предмет: Биология, Класс: 9, Тема: Деление клетки</li>
+                <li>Предмет: Физика, Класс: 10, Тема: Законы Ньютона</li>
+            </ul>
+            
+            <a href="/" class="back-link">Вернуться на главную</a>
+        </body>
+    </html>
+    '''
+
+
+# обработчик формы
+@app.route('/make_summary', methods=['GET'])
+def handle_form():
+    subject = request.args.get('subject')
+    klass = request.args.get('klass')
+    theme = request.args.get('theme')
+
+    if not all([subject, klass, theme]):
+        return "Все поля должны быть заполнены", 400
+
+    try:
+        klass_int = int(klass)
+        if klass_int < 1 or klass_int > 11:
+            return "Класс должен быть числом от 1 до 11", 400
+    except ValueError:
+        return "Класс должен быть числом", 400
+
+    return redirect(f'/make_summary/{subject}/{klass_int}/{theme}')
 
 
 # основной маршрут для генерации конспекта
 @app.route('/make_summary/<string:subject>/<int:klass>/<string:theme>', methods=['GET'])
 def question(subject, klass, theme):
-    return main.create(subject, klass, theme)
+    try:
+        # Проверяем корректность класса
+        if klass < 1 or klass > 11:
+            return f"Некорректный класс (должен быть от 1 до 11), у вас {klass}", 400
+        # Проверяем, что тема не пустая
+        if not theme.strip():
+            return "Тема не может быть пустой", 400
+        result = main.create(subject, klass, theme)
+        return result
+    except Exception as e:
+        return f"Внутренняя ошибка сервера: {str(e)}", 500
 
 
 if __name__ == '__main__':
