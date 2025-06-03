@@ -11,6 +11,7 @@ class Maker: # класс для генерации конспектов
             "Content-Type": "application/json"
             }
     def create(self, subject, klass, theme):
+        }
         data = {
             "model": "deepseek-chat",
             "messages": [
