@@ -36,7 +36,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Окак."
+    return "Окак.Ogadem"
 
 
 @app.route('/question', methods=['GET'])
