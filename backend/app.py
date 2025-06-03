@@ -33,6 +33,8 @@ app = Flask(__name__)
 
 # Маршрут для главной страницы
 
+print("Hello world")
+
 
 @app.route('/')
 def home():
