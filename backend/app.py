@@ -29,6 +29,7 @@ class Maker:
 
 main = Maker()
 # окак
+# Ogadem
 app = Flask(__name__)
 
 # Маршрут для главной страницы
@@ -37,7 +38,6 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     return "Окак.Ogadem"
-
 
 
 @app.route('/question', methods=['GET'])
