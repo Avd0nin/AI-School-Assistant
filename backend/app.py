@@ -29,7 +29,7 @@ app = Flask(__name__)
 # Маршрут для главной страницы
 @app.route('/')
 def home():
-    return "Hello! This is your Flask backend."
+    return "Окак."
 
 @app.route('/question', methods=['GET'])
 def info():
