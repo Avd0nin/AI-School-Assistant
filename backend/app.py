@@ -1,14 +1,18 @@
 from flask import Flask, jsonify, request
 import requests
 
+
 class Maker:
     def __init__(self):
-        self.url = "https://api.deepseek.com/v1/chat/completions"  # предположительный эндпоинт
-        self.api_key = ""
+        # предположительный эндпоинт
+        self.url = "https://api.deepseek.com/v1/chat/completions"
+        self.api_key = "sk-338c16a44f21420282495748d4f8b729"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
-            }
+        }
+# OKKAKKK
+
     def create(self, klass, theme):
         data = {
             "model": "deepseek-chat",  # или другая модель
@@ -21,23 +25,29 @@ class Maker:
 
         response = requests.post(self.url, json=data, headers=self.headers)
         return response.json()['choices'][0]['message']['content']
-        
+
+
 main = Maker()
-#окак
+# окак
 app = Flask(__name__)
 
 # Маршрут для главной страницы
+
+
 @app.route('/')
 def home():
-    return "Hello! This is your Flask backend."
+    return "Окак."
+
 
 @app.route('/question', methods=['GET'])
 def info():
     return 'Укажите класс и тему'
 
+
 @app.route('/question/<int:klass>/<string:theme>', methods=['GET'])
 def question(klass, theme):
     return main.create(klass, theme)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
