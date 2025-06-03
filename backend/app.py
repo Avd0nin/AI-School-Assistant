@@ -39,6 +39,7 @@ def home():
     return "Окак.Ogadem"
 
 
+
 @app.route('/question', methods=['GET'])
 def info():
     return 'Укажите класс и тему'
