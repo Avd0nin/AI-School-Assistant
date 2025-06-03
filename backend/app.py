@@ -21,9 +21,9 @@ class Maker:
 
         response = requests.post(self.url, json=data, headers=self.headers)
         return response.json()['choices'][0]['message']['content']
-
+        
 main = Maker()
-
+#окак
 app = Flask(__name__)
 
 # Маршрут для главной страницы
