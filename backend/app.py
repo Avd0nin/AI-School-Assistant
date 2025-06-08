@@ -31,8 +31,138 @@ main = Maker()
 app = Flask(__name__)
 
 
-# маршрут главной страницы с формой
-@app.route('/')
+# домашняя страницы
+@app.route('/', methods=['GET'])
+def index():
+    return '''
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AI-School-Assistant</title>
+        <style>
+            body {
+                font-family: 'Arial', sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f8f5ff;
+                color: #333;
+            }
+            
+            header {
+                background: linear-gradient(to right, #6a11cb, #8e44ad);
+                color: white;
+                padding: 20px 0;
+                text-align: center;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            
+            .logo {
+                font-size: 2.5em;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            
+            nav {
+                background-color: #5d3f8a;
+                padding: 10px 0;
+            }
+            
+            nav ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+            }
+            
+            nav ul li {
+                display: inline;
+                margin: 0 15px;
+            }
+            
+            nav ul li a {
+                color: white;
+                text-decoration: none;
+                font-size: 1.1em;
+                transition: color 0.3s;
+            }
+            
+            nav ul li a:hover {
+                color: #d1c4e9;
+            }
+            
+            main {
+                max-width: 1200px;
+                margin: 20px auto;
+                padding: 20px;
+                min-height: calc(100vh - 200px);
+            }
+            
+            footer {
+                background-color: #4a235a;
+                color: white;
+                text-align: center;
+                padding: 20px 0;
+                margin-top: 20px;
+            }
+            
+            .footer-content {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            
+            .footer-links {
+                margin-bottom: 15px;
+            }
+            
+            .footer-links a {
+                color: #d1c4e9;
+                margin: 0 10px;
+                text-decoration: none;
+            }
+            
+            .footer-links a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="logo">AI-School-Assistant</div>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="/">Главная</a></li>
+                <li><a href="help.html">Помощь</a></li>
+                <li><a href="about.html">О нас</a></li>
+                <li><a href="contact.html">Контакты</a></li>
+            </ul>
+        </nav>
+        
+        <main>
+            <!-- Здесь будет основное содержимое страницы -->
+            <h1>Добро пожаловать в AI-School-Assistant</h1>
+            <p>Ваш умный помощник в образовательном процессе.</p>
+        </main>
+        
+        <footer>
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="privacy.html">Политика конфиденциальности</a>
+                    <a href="terms.html">Условия использования</a>
+                    <a href="faq.html">FAQ</a>
+                </div>
+                <p>&copy; 2023 AI-School-Assistant. Все права защищены.</p>
+            </div>
+        </footer>
+    </body>
+    </html>'''
+               
+
+# маршрут страницы с генерацией конспекта
+@app.route('/make_summary', methods=['GET'])
 def home():
     return '''
     <html>
@@ -208,7 +338,7 @@ def info():
 
 
 # обработчик формы
-@app.route('/make_summary', methods=['GET'])
+@app.route('/api/make_summary', methods=['GET'])
 def handle_form():
     subject = request.args.get('subject')
     klass = request.args.get('klass')
@@ -221,14 +351,14 @@ def handle_form():
         klass_int = int(klass)
         if klass_int < 1 or klass_int > 11:
             return "Класс должен быть числом от 1 до 11", 400
-    except ValueError:
+    except (ValueError, TypeError):
         return "Класс должен быть числом", 400
 
     return redirect(f'/make_summary/{subject}/{klass_int}/{theme}')
 
 
 # основной маршрут для генерации конспекта
-@app.route('/make_summary/<string:subject>/<int:klass>/<string:theme>', methods=['GET'])
+@app.route('/api/make_summary/<string:subject>/<int:klass>/<string:theme>', methods=['GET'])
 def question(subject, klass, theme):
     try:
         # Проверяем корректность класса
