@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+    <body>
+        <div class="container">
+            <h1>Генератор конспектов</h1>
+            <form action="/api/make_summary_load" method="POST" class="summary-form">
+                <div class="form-group">
+                    <label for="subject">Предмет:</label>
+                    <input type="text" id="subject" name="subject" required placeholder="Например: Математика">
+                </div>
+                
+                <div class="form-group">
+                    <label for="klass">Класс:</label>
+                    <input type="number" id="klass" name="klass" min="1" max="11" required placeholder="От 1 до 11">
+                </div>
+                
+                <div class="form-group">
+                    <label for="theme">Тема:</label>
+                    <input type="text" id="theme" name="theme" required placeholder="Например: Квадратные уравнения">
+                </div>
+                
+                <button type="submit" class="submit-btn">Сгенерировать конспект</button>
+            </form>
+            <a href="/help" class="help-link">Инструкция по использованию</a>
+        </div>
+    </body>
+{% endblock %}
