@@ -3,28 +3,97 @@
 {% block title %}Главная страница{% endblock %}
 
 {% block content %}
-    <body>
-        <div class="container">
-            <h1>Генератор конспектов</h1>
-            <form action="/api/make_summary_load" method="POST" class="summary-form">
-                <div class="form-group">
-                    <label for="subject">Предмет:</label>
-                    <input type="text" id="subject" name="subject" required placeholder="Например: Математика">
-                </div>
-                
-                <div class="form-group">
-                    <label for="klass">Класс:</label>
-                    <input type="number" id="klass" name="klass" min="1" max="11" required placeholder="От 1 до 11">
-                </div>
-                
-                <div class="form-group">
-                    <label for="theme">Тема:</label>
-                    <input type="text" id="theme" name="theme" required placeholder="Например: Квадратные уравнения">
-                </div>
-                
-                <button type="submit" class="submit-btn">Сгенерировать конспект</button>
+    <style>
+        .main-content {
+            margin: 0 auto;
+            max-width: 600px;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+    
+    <div class="main-content">
+        <!-- Блок загрузки (изначально скрыт) -->
+        <div id="loading" class="hidden">
+            <h1>Генерируем для вас конспект, пожалуйста подождите</h1>
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Основной контент (форма и заголовок) -->
+        <div id="content">
+            <h1 id="main-title">Генератор конспектов</h1>
+            <form id="params-form">
+                <input type="text" name="subject" placeholder="Предмет" required>
+                <input type="number" name="class" placeholder="Класс (1 - 11)" required>
+                <input type="text" name="theme" placeholder="Тема" required>
+                <button type="submit">Сгенерировать</button>
             </form>
             <a href="/help" class="help-link">Инструкция по использованию</a>
+            <div id="result"></div>
         </div>
-    </body>
+    </div>
+
+    <script>
+        function goBack() {
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('params-form').classList.remove('hidden');
+            document.getElementById('main-title').classList.remove('hidden');
+            document.querySelector('.help-link').classList.remove('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Устанавливаем значения по умолчанию
+            const form = document.getElementById('params-form');
+            form.querySelector('[name="subject"]').value = 'Математика';
+            form.querySelector('[name="class"]').value = '6';
+            form.querySelector('[name="theme"]').value = 'Дроби';
+        });
+
+        document.getElementById('params-form').addEventListener('submit', function(e) {
+            e.preventDefault();  // Отменяем стандартную отправку формы
+
+            // Скрываем форму и заголовок сразу при нажатии
+            document.getElementById('params-form').classList.add('hidden');
+            document.getElementById('main-title').classList.add('hidden');
+            document.querySelector('.help-link').classList.add('hidden');
+            
+            // Показываем загрузку
+            document.getElementById('loading').classList.remove('hidden');
+
+            // Формируем GET-параметры
+            const params = new URLSearchParams(new FormData(this));
+
+            // Отправляем запрос
+            fetch(`/api/summary?${params.toString()}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Ошибка сервера');
+                    return response.text();
+                })
+                .then(html => {
+                    document.getElementById('result').innerHTML = html + `
+                        <div style="margin-top: 1px;">
+                            <button class="back-button" onclick="goBack()">
+                                Назад
+                            </button>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    document.getElementById('result').innerHTML = `
+                        <p style="color: red;">Ошибка: ${error.message}</p>
+                    `;
+                    // В случае ошибки возвращаем форму
+                    document.getElementById('params-form').classList.remove('hidden');
+                    document.getElementById('main-title').classList.remove('hidden');
+                    document.querySelector('.help-link').classList.remove('hidden');
+                })
+                .finally(() => {
+                    // В любом случае скрываем загрузку
+                    document.getElementById('loading').classList.add('hidden');
+                });
+        });
+    </script>
 {% endblock %}
