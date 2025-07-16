@@ -4,6 +4,9 @@ body {
     padding: 0;
     background-color: #f8f5ff;
     color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 header {
@@ -60,7 +63,225 @@ nav ul li a:hover {
 
 h1 {
     color: #6a11cb;
-    margin-bottom: 18px;
+}
+
+/* Заголовки */
+h2 {
+    color: #6a11cb;
+    font-size: 2em;
+    font-weight: bold;
+    margin: 30px 0 20px 0;
+    text-align: center;
+    position: relative;
+}
+
+h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(to right, #6a11cb, #8e44ad);
+    margin: 10px auto;
+    border-radius: 2px;
+}
+
+h3 {
+    color: #5d3f8a;
+    font-size: 1.5em;
+    font-weight: 600;
+    margin: 25px 0 15px 0;
+    text-align: left;
+}
+
+/* Списки */
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+li {
+    padding: 12px 0;
+    color: #6a11cb;
+    font-size: 16px;
+    line-height: 1.6;
+    position: relative;
+    padding-left: 25px;
+}
+
+li:before {
+    content: '•';
+    color: #985fd5;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    font-size: 18px;
+}
+
+li:last-child {
+    border-bottom: none;
+}
+
+/* Параграфы */
+p {
+    color: #4a5568;
+    font-size: 16px;
+    line-height: 1.7;
+    margin: 15px 0;
+}
+
+/* Ссылки в тексте */
+a {
+    color: #6a11cb;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #8e44ad;
+    text-decoration: underline;
+}
+
+/* Блоки с информацией */
+.info-block {
+    background: #f8f5ff;
+    border-left: 4px solid #6a11cb;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 0 8px 8px 0;
+}
+
+.info-block p {
+    margin: 0;
+    color: #5d3f8a;
+}
+
+/* Карточки */
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    padding: 25px;
+    margin: 20px 0;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(106, 17, 203, 0.15);
+}
+
+/* Разделители */
+hr {
+    border: none;
+    height: 2px;
+    background: linear-gradient(to right, #6a11cb, #8e44ad);
+    margin: 30px 0;
+    border-radius: 1px;
+}
+
+/* Таблицы */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+th {
+    background: linear-gradient(to right, #6a11cb, #8e44ad);
+    color: white;
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+}
+
+td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #4a5568;
+}
+
+tr:hover {
+    background-color: #f8f5ff;
+}
+
+/* Код */
+code {
+    background: #f8f5ff;
+    color: #6a11cb;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+}
+
+pre {
+    background: #f8f5ff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
+pre code {
+    background: none;
+    padding: 0;
+}
+
+/* Алерты/уведомления */
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    background: #f0fff4;
+    border-left-color: #38a169;
+    color: #2f855a;
+}
+
+.alert-warning {
+    background: #fffbf0;
+    border-left-color: #ed8936;
+    color: #c05621;
+}
+
+.alert-error {
+    background: #fff5f5;
+    border-left-color: #e53e3e;
+    color: #c53030;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    h2 {
+        font-size: 1.6em;
+    }
+    
+    h3 {
+        font-size: 1.3em;
+    }
+    
+    .card {
+        padding: 20px 15px;
+    }
+    
+    table {
+        font-size: 14px;
+    }
+    
+    th, td {
+        padding: 10px 8px;
+    }
 }
 
 .summary-form {
@@ -122,8 +343,8 @@ footer {
     background-color: #5d3f8a;
     color: white;
     text-align: center;
-    padding: 20px 0;
-    margin-top: 20px;
+    padding: 10px;
+    margin-top: auto;
 }
 
 .footer-content {
@@ -178,4 +399,418 @@ footer {
     .footer-social {
         margin-top: 20px;
     }
+}
+.spinner {
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: #6a11cb;
+    animation: spin 1s ease-in-out infinite;
+    margin: 20px auto;
+}
+        
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+        
+/* Скрытие элементов */
+.hidden {
+    display: none;
+}
+        
+/* Стили формы */
+#params-form {
+    margin: 30px auto;
+    max-width: 500px;
+    padding: 30px;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+#params-form label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+#params-form input[type="text"],
+#params-form input[type="email"],
+#params-form input[type="password"],
+#params-form input[type="number"] {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 16px;
+    background: #fff;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    font-family: inherit;
+    margin-bottom: 20px;
+}
+
+#params-form input:focus {
+    outline: none;
+    border-color: #6a11cb;
+    box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.1);
+    transform: translateY(-2px);
+}
+
+#params-form button[type="submit"] {
+    margin-top: 10px;
+    padding: 16px 32px;
+    background: linear-gradient(to right, #6a11cb, #8e44ad);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#params-form button[type="submit"]:hover {
+    background: linear-gradient(to right, #5d3f8a, #7a3d99);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(106, 17, 203, 0.3);
+}
+
+#params-form.hidden {
+        display: none !important;
+}
+
+.back-button {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 16px 32px;
+    background: linear-gradient(to right, #6a11cb, #8e44ad);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.back-button:hover {
+    background: linear-gradient(to right, #5d3f8a, #7a3d99);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(106, 17, 203, 0.3);
+}
+/* Выделение текста */
+strong {
+    color: #5d3f8a;
+    font-weight: 700;
+    font-size: 1.05em;
+    letter-spacing: 0.3px;
+}
+
+b {
+    color: #5d3f8a;
+    font-weight: 700;
+}
+
+/* Курсив */
+em {
+    color: #6a11cb;
+    font-style: italic;
+    font-weight: 500;
+}
+
+i {
+    color: #6a11cb;
+    font-style: italic;
+}
+
+/* Подчеркивание */
+u {
+    text-decoration: underline;
+    text-decoration-color: #8e44ad;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+
+/* Зачеркнутый текст */
+s, del {
+    text-decoration: line-through;
+    text-decoration-color: #e53e3e;
+    color: #a0aec0;
+}
+
+/* Вставленный текст */
+ins {
+    background: #f0fff4;
+    color: #38a169;
+    text-decoration: none;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Выделенный текст */
+mark {
+    background: linear-gradient(120deg, #6a11cb20 0%, #8e44ad20 100%);
+    color: #5d3f8a;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+/* Маленький текст */
+small {
+    font-size: 0.85em;
+    color: #718096;
+    line-height: 1.4;
+}
+
+/* Большой текст */
+big {
+    font-size: 1.2em;
+    color: #5d3f8a;
+    font-weight: 500;
+}
+
+/* Подстрочный и надстрочный текст */
+sub, sup {
+    font-size: 0.75em;
+    color: #6a11cb;
+    font-weight: 500;
+}
+
+/* Аббревиатуры */
+abbr {
+    border-bottom: 2px dotted #6a11cb;
+    cursor: help;
+    text-decoration: none;
+}
+
+/* Цитаты */
+blockquote {
+    background: #f8f5ff;
+    border-left: 4px solid #6a11cb;
+    margin: 20px 0;
+    padding: 20px 25px;
+    font-style: italic;
+    color: #5d3f8a;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+}
+
+blockquote::before {
+    content: '"';
+    font-size: 4em;
+    color: #6a11cb;
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    opacity: 0.3;
+}
+
+blockquote p {
+    margin: 0;
+    font-size: 1.1em;
+    line-height: 1.6;
+}
+
+blockquote cite {
+    display: block;
+    text-align: right;
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #718096;
+    font-style: normal;
+}
+
+blockquote cite::before {
+    content: '— ';
+}
+
+/* Встроенные цитаты */
+q {
+    color: #6a11cb;
+    font-style: italic;
+    quotes: '"' '"' "'" "'";
+}
+
+q::before {
+    content: open-quote;
+}
+
+q::after {
+    content: close-quote;
+}
+
+/* Адреса */
+address {
+    font-style: italic;
+    color: #718096;
+    line-height: 1.6;
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f5ff;
+    border-radius: 6px;
+    border-left: 3px solid #6a11cb;
+}
+
+/* Определения */
+dfn {
+    color: #6a11cb;
+    font-weight: 600;
+    font-style: normal;
+    border-bottom: 1px dotted #6a11cb;
+}
+
+/* Переменные */
+var {
+    color: #8e44ad;
+    font-style: italic;
+    font-family: 'Courier New', monospace;
+    background: #f8f5ff;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+/* Клавиатурный ввод */
+kbd {
+    background: #2d3748;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 1px solid #4a5568;
+}
+
+/* Образец вывода */
+samp {
+    background: #f7fafc;
+    color: #2d3748;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    border: 1px solid #e2e8f0;
+}
+
+/* Время */
+time {
+    color: #6a11cb;
+    font-weight: 500;
+}
+
+/* Выделение важной информации */
+.highlight {
+    background: linear-gradient(120deg, #6a11cb15 0%, #8e44ad15 100%);
+    padding: 3px 6px;
+    border-radius: 4px;
+    color: #5d3f8a;
+    font-weight: 600;
+    border-left: 3px solid #6a11cb;
+}
+
+/* Текст с акцентом */
+.accent-text {
+    color: #6a11cb;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(106, 17, 203, 0.1);
+}
+
+/* Мелкий текст для примечаний */
+.note {
+    font-size: 0.9em;
+    color: #718096;
+    font-style: italic;
+    margin: 10px 0;
+    padding: 10px 15px;
+    background: #f7fafc;
+    border-radius: 6px;
+    border-left: 3px solid #cbd5e0;
+}
+ol {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    counter-reset: custom-counter;
+}
+
+ol li {
+    padding: 15px 0 15px 50px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #4a5568;
+    font-size: 16px;
+    line-height: 1.6;
+    position: relative;
+    counter-increment: custom-counter;
+}
+
+ol li:before {
+    content: counter(custom-counter);
+    position: absolute;
+    left: 0;
+    top: 15px;
+    background: linear-gradient(135deg, #6a11cb, #8e44ad);
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(106, 17, 203, 0.3);
+}
+
+ol li:last-child {
+    border-bottom: none;
+}
+
+/* Вложенные упорядоченные списки */
+ol ol {
+    margin: 10px 0;
+    padding-left: 20px;
+    counter-reset: nested-counter;
+}
+
+ol ol li {
+    padding: 10px 0 10px 40px;
+    counter-increment: nested-counter;
+}
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+/* Курсив и акценты */
+em {
+    color: #6a11cb;
+    font-style: italic;
+    font-weight: 500;
+    position: relative;
+    padding: 0 2px;
+    transition: all 0.3s ease;
+}
+
+em:hover {
+    color: #8e44ad;
+    text-shadow: 0 1px 3px rgba(106, 17, 203, 0.2);
 }

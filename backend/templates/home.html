@@ -3,6 +3,25 @@
 {% block title %}Главная страница{% endblock %}
 
 {% block content %}
-    <h1>Добро пожаловать в AI-School-Assistant</h1>
-    <p>Ваш умный помощник в образовательном процессе.</p>
+    <h1 style="text-align: center;">Добро пожаловать в AI-School-Assistant</h1>
+    <p style="text-align: center;">Ваш умный помощник в образовательном процессе.</p>
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/make_summary" style="
+            display: inline-block;
+            background: linear-gradient(135deg, #bc77fc 0%, #3c0376 100%);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.6)'"
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)'">
+            📝 Генератор конспектов
+        </a>
+    </div>
 {% endblock %}
