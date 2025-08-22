@@ -3,10 +3,8 @@
 {% block title %}Главная страница{% endblock %}
 
 {% block content %}
-    <h1 style="text-align: center;">Добро пожаловать в AI-School-Assistant</h1>
-    <p style="text-align: center;">Ваш умный помощник в образовательном процессе.</p>
-    <div style="margin-top: 30px; text-align: center;">
-        <a href="/make_summary" style="
+    <style>
+        .button {
             display: inline-block;
             background: linear-gradient(135deg, #bc77fc 0%, #3c0376 100%);
             color: white;
@@ -19,9 +17,25 @@
             transition: all 0.3s ease;
             border: none;
             cursor: pointer;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.6)'"
-           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)'">
+        }
+        
+        .summary-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+    </style>
+
+    <h1 style="text-align: center;">Добро пожаловать в AI-School-Assistant</h1>
+    <p style="text-align: center;">Ваш "умный" помощник в образовательном процессе.</p>
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/make_summary" class="button">
             📝 Генератор конспектов
+        </a>
+        <a href="/chat" class="button">
+            💬 ИИ чат
+        </a>
+        <a href="/make_test" class="button">
+            📋 Генератор тестов
         </a>
     </div>
 {% endblock %}

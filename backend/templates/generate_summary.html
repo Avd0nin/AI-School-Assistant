@@ -26,7 +26,7 @@
             <h1 id="main-title">Генератор конспектов</h1>
             <form id="params-form">
                 <input type="text" name="subject" placeholder="Предмет" required>
-                <input type="number" name="class" placeholder="Класс (1 - 11)" required>
+                <input type="number" name="klass" placeholder="Класс (1 - 11)" required>
                 <input type="text" name="theme" placeholder="Тема" required>
                 <button type="submit">Сгенерировать</button>
             </form>
@@ -47,7 +47,7 @@
             // Устанавливаем значения по умолчанию
             const form = document.getElementById('params-form');
             form.querySelector('[name="subject"]').value = 'Математика';
-            form.querySelector('[name="class"]').value = '6';
+            form.querySelector('[name="klass"]').value = '6';
             form.querySelector('[name="theme"]').value = 'Дроби';
         });
 
