@@ -11,7 +11,7 @@ header {
     color: white;
     padding: 20px 0;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
@@ -53,7 +53,7 @@ nav ul li a:hover {
     margin: 60px auto;
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     padding: 40px 30px;
     text-align: center;
 }
@@ -144,6 +144,7 @@ footer {
 .footer-links a:hover {
     text-decoration: underline;
 }
+
 .footer-social {
     margin-bottom: 15px;
 }
@@ -174,8 +175,95 @@ footer {
         display: block;
         margin: 10px 0;
     }
-    
+
     .footer-social {
         margin-top: 20px;
     }
+}
+
+/* Стили для тестов */
+.question {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.question h3 {
+    margin-top: 0;
+    color: #6a11cb;
+}
+
+.options-list {
+    list-style: none;
+    padding: 0;
+}
+
+.options-list li {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f5ff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.options-list li:hover {
+    background: #e9e0ff;
+}
+
+.options-list input[type="radio"] {
+    margin-right: 10px;
+}
+
+.open-question textarea {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    min-height: 100px;
+    font-family: inherit;
+    margin-bottom: 10px;
+}
+
+.check-answer-btn {
+    padding: 10px 20px;
+    background: #6a11cb;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.check-answer-btn:hover {
+    background: #5d3f8a;
+}
+
+.feedback {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.test-results {
+    margin-top: 40px;
+    padding: 20px;
+    background: #f8f5ff;
+    border-radius: 10px;
+}
+
+.test-results h2 {
+    color: #6a11cb;
+    margin-top: 0;
+}
+
+.repeat-advice {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff0f0;
+    border-left: 4px solid #e53e3e;
+    border-radius: 0 5px 5px 0;
 }

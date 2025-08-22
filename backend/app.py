@@ -95,6 +95,60 @@ class AICore:  # класс для генерации конспектов
         content = response.json()['choices'][0]['message']['content']
         return content.replace('```html', '').replace('```', '').strip()
 
+    def create_test(self, subject, klass, theme):
+        data = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "user", "content": f"""
+                Сгенерируй тест по предмету '{subject}' для {klass} класса по теме '{theme}'.
+                (10 разных вопросов)
+                Формат HTML должен быть строго следующим:
+                
+                <div class="test-container">
+                    <!-- Для вопросов с выбором ответа -->
+                    <div class="question-block">
+                        <div class="question-text">1. Текст вопроса?</div>
+                        <ul class="options-list">
+                            <li class="option-item">
+                                <input type="radio" name="q1" id="q1_1">
+                                <label for="q1_1">Вариант 1</label>
+                            </li>
+                            <li class="option-item">
+                                <input type="radio" name="q1" id="q1_2" value="correct">
+                                <label for="q1_2">Вариант 2 (правильный)</label>
+                            </li>
+                        </ul>
+                        <button class="check-btn">Проверить ответ</button>
+                        <div class="feedback" style="display: none;"></div>
+                    </div>
+                    
+                    <!-- Для вопросов с открытым ответом -->
+                    <div class="question-block">
+                        <div class="question-text">2. Текст открытого вопроса?</div>
+                        <div class="open-question">
+                            <textarea class="answer-input" placeholder="Введите ваш ответ..."></textarea>
+                            <button class="check-btn">Проверить ответ</button>
+                            <div class="feedback" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                Правила:
+                1. Добавляй кнопку 'Проверить ответ' после каждого вопроса
+                2. Добавляй div для отображения результата проверки
+                3. Для вопросов с выбором: правильный вариант помечай value="correct"
+                4. Для открытых вопросов просто добавляй текстовое поле
+                5. Не добавляй никаких дополнительных комментариев
+                """}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 4000
+        }
+
+        response = requests.post(self.url, json=data, headers=self.headers)
+        content = response.json()['choices'][0]['message']['content']
+        return content.replace('```html', '').replace('```', '').strip()
+
 
 
 model = AICore()
@@ -102,23 +156,28 @@ model = AICore()
 
 app = Flask(__name__)
 
-# домашняя страницы
-@app.route('/', methods=['GET'])
+# Главная страница
+
+
+@app.route('/')
 def home():
     return render_template('home.html')
-               
 
-# маршрут страницы с генерацией конспекта
-@app.route('/make_summary', methods=['GET'])
-def generate():
+# Генерация конспекта
+
+
+@app.route('/make_summary')
+def make_summary():
     return render_template('generate_summary.html')
 
+# Генерация теста
 
 # маршрут по консультации использования
 @app.route('/help', methods=['GET'])
 def info():
     return render_template('help.html')
 
+# API для генерации конспекта
 
 @app.route('/chat', methods=['GET'])
 def chat():

@@ -14,7 +14,7 @@ header {
     color: white;
     padding: 20px 0;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
@@ -56,7 +56,7 @@ nav ul li a:hover {
     margin: 60px auto;
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     padding: 40px 30px;
     text-align: center;
 }
@@ -161,7 +161,7 @@ a:hover {
 .card {
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     padding: 25px;
     margin: 20px 0;
     border: 1px solid #e2e8f0;
@@ -190,7 +190,7 @@ table {
     background: #fff;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 th {
@@ -266,20 +266,21 @@ pre code {
     h2 {
         font-size: 1.6em;
     }
-    
+
     h3 {
         font-size: 1.3em;
     }
-    
+
     .card {
         padding: 20px 15px;
     }
-    
+
     table {
         font-size: 14px;
     }
-    
-    th, td {
+
+    th,
+    td {
         padding: 10px 8px;
     }
 }
@@ -365,6 +366,7 @@ footer {
 .footer-links a:hover {
     text-decoration: underline;
 }
+
 .footer-social {
     margin-bottom: 15px;
 }
@@ -395,11 +397,12 @@ footer {
         display: block;
         margin: 10px 0;
     }
-    
+
     .footer-social {
         margin-top: 20px;
     }
 }
+
 .spinner {
     width: 80px;
     height: 80px;
@@ -409,16 +412,18 @@ footer {
     animation: spin 1s ease-in-out infinite;
     margin: 20px auto;
 }
-        
+
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
-        
+
 /* Скрытие элементов */
 .hidden {
     display: none;
 }
-        
+
 /* Стили формы */
 #params-form {
     margin: 30px auto;
@@ -427,7 +432,7 @@ footer {
     background: #fff;
     border: 2px solid #e2e8f0;
     border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     gap: 25px;
@@ -490,7 +495,7 @@ footer {
 }
 
 #params-form.hidden {
-        display: none !important;
+    display: none !important;
 }
 
 .back-button {
@@ -516,6 +521,7 @@ footer {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(106, 17, 203, 0.3);
 }
+
 /* Выделение текста */
 strong {
     color: #5d3f8a;
@@ -550,7 +556,8 @@ u {
 }
 
 /* Зачеркнутый текст */
-s, del {
+s,
+del {
     text-decoration: line-through;
     text-decoration-color: #e53e3e;
     color: #a0aec0;
@@ -589,7 +596,8 @@ big {
 }
 
 /* Подстрочный и надстрочный текст */
-sub, sup {
+sub,
+sup {
     font-size: 0.75em;
     color: #6a11cb;
     font-weight: 500;
@@ -696,7 +704,7 @@ kbd {
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 0.9em;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     border: 1px solid #4a5568;
 }
 
@@ -745,6 +753,7 @@ time {
     border-radius: 6px;
     border-left: 3px solid #cbd5e0;
 }
+
 ol {
     list-style: none;
     padding: 0;
@@ -795,11 +804,13 @@ ol ol li {
     padding: 10px 0 10px 40px;
     counter-increment: nested-counter;
 }
+
 ul {
     list-style: none;
     padding: 0;
     margin: 20px 0;
 }
+
 /* Курсив и акценты */
 em {
     color: #6a11cb;
@@ -813,4 +824,518 @@ em {
 em:hover {
     color: #8e44ad;
     text-shadow: 0 1px 3px rgba(106, 17, 203, 0.2);
+}
+
+
+
+/* Стили для тестов */
+.question {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.question h3 {
+    margin-top: 0;
+    color: #6a11cb;
+}
+
+.options-list {
+    list-style: none;
+    padding: 0;
+}
+
+.options-list li {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f5ff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.options-list li:hover {
+    background: #e9e0ff;
+}
+
+.options-list input[type="radio"] {
+    margin-right: 10px;
+}
+
+.open-question textarea {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    min-height: 100px;
+    font-family: inherit;
+    margin-bottom: 10px;
+}
+
+.check-answer-btn {
+    padding: 10px 20px;
+    background: #6a11cb;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.check-answer-btn:hover {
+    background: #5d3f8a;
+}
+
+.feedback {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.test-results {
+    margin-top: 40px;
+    padding: 20px;
+    background: #f8f5ff;
+    border-radius: 10px;
+}
+
+.test-results h2 {
+    color: #6a11cb;
+    margin-top: 0;
+}
+
+.repeat-advice {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff0f0;
+    border-left: 4px solid #e53e3e;
+    border-radius: 0 5px 5px 0;
+}
+
+/* Стили для главной страницы */
+.home-container {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.home-container h1 {
+    color: #6a11cb;
+    font-size: 2.5em;
+    margin-bottom: 15px;
+}
+
+.subtitle {
+    color: #718096;
+    font-size: 1.2em;
+    margin-bottom: 40px;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: 30px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.1em;
+}
+
+.btn.primary {
+    background: linear-gradient(135deg, #6a11cb 0%, #8e44ad 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
+}
+
+.btn.secondary {
+    background: linear-gradient(135deg, #4a6fa5 0%, #166088 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(74, 111, 165, 0.3);
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Стили для генератора тестов */
+#test-form {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#test-content {
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.question {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+.options-list {
+    list-style: none;
+    padding: 0;
+}
+
+.options-list li {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f5ff;
+    border-radius: 5px;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, #6a11cb 0%, #8e44ad 100%);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
+}
+
+.back-button {
+    background: linear-gradient(135deg, #4a6fa5 0%, #166088 100%);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+}
+
+.back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(74, 111, 165, 0.3);
+}
+
+/* Стили для тестовых вопросов */
+.test-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.question-block {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.question-text {
+    font-weight: bold;
+    color: #5d3f8a;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+/* Стили для вопросов с вариантами ответов */
+.options-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.option-item {
+    padding: 10px 15px;
+    margin: 5px 0;
+    background: #f8f5ff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-item:hover {
+    background: #e9e0ff;
+}
+
+.option-item input[type="radio"] {
+    margin-right: 10px;
+}
+
+/* Стили для открытых вопросов */
+.open-question {
+    margin-top: 15px;
+}
+
+.answer-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 16px;
+    min-height: 100px;
+    resize: vertical;
+    transition: all 0.3s;
+    background: #f8fafc;
+}
+
+.answer-input:focus {
+    outline: none;
+    border-color: #6a11cb;
+    box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.1);
+}
+
+.check-answer-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #6a11cb 0%, #8e44ad 100%);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.check-answer-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(106, 17, 203, 0.2);
+}
+
+/* Стили для результатов проверки */
+.feedback {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.correct-feedback {
+    background: #f0fff4;
+    color: #2f855a;
+    border-left: 4px solid #38a169;
+}
+
+.incorrect-feedback {
+    background: #fff5f5;
+    color: #c53030;
+    border-left: 4px solid #e53e3e;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .test-container {
+        padding: 10px;
+    }
+
+    .question-block {
+        padding: 15px;
+    }
+
+    .answer-input {
+        min-height: 80px;
+    }
+}
+
+/* Стили для кнопок проверки */
+.check-btn {
+    display: block;
+    margin: 15px 0;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #6a11cb 0%, #8e44ad 100%);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.check-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(106, 17, 203, 0.3);
+}
+
+/* Стили для отзывов */
+.feedback {
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    display: none;
+}
+
+.correct-feedback {
+    background: #f0fff4;
+    color: #2f855a;
+    border-left: 4px solid #38a169;
+}
+
+.incorrect-feedback {
+    background: #fff5f5;
+    color: #c53030;
+    border-left: 4px solid #e53e3e;
+}
+
+/* Стили для ответов */
+.correct-answer {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f0fff4;
+    border-radius: 5px;
+}
+
+#correct-answer-text {
+    color: #2f855a;
+    font-weight: bold;
+}
+
+.incorrect-answer {
+    background-color: #fff5f5 !important;
+    border-left: 4px solid #e53e3e !important;
+}
+
+.neutral-feedback {
+    background-color: #f8f9fa;
+    border-left: 4px solid #6c757d;
+    color: #212529;
+}
+
+.answered-input {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+/* Отключаем hover для проверенных вопросов */
+.question-block .option-item.correct-answer:hover,
+.question-block .option-item.incorrect-answer:hover {
+    background-color: inherit !important;
+    cursor: default;
+}
+
+.correct-answer-input {
+    background-color: #f0fff4 !important;
+    border-left: 4px solid #38a169 !important;
+}
+
+.incorrect-answer-input {
+    background-color: #fff5f5 !important;
+    border-left: 4px solid #e53e3e !important;
+}
+
+.neutral-answer-input {
+    background-color: #f8f9fa !important;
+    border-left: 4px solid #6c757d !important;
+}
+
+.feedback.correct-feedback {
+    background-color: #f0fff4;
+    color: #2f855a;
+    border-left: 4px solid #38a169;
+}
+
+.feedback.incorrect-feedback {
+    background-color: #fff5f5;
+    color: #c53030;
+    border-left: 4px solid #e53e3e;
+}
+
+.check-btn {
+    transition: all 0.3s ease;
+}
+
+.disabled-btn {
+    opacity: 0.7;
+    transform: scale(0.98);
+}
+
+/* Стили для ответов */
+.correct-answer {
+    background-color: #f0fff4 !important;
+    border-left: 4px solid #38a169 !important;
+}
+
+.incorrect-answer {
+    background-color: #fff5f5 !important;
+    border-left: 4px solid #e53e3e !important;
+}
+
+.option-item {
+    transition: all 0.3s ease;
+}
+
+
+/* Стили для ответов */
+.correct-answer {
+    background-color: #f0fff4 !important;
+    border-left: 4px solid #38a169 !important;
+}
+
+.incorrect-answer {
+    background-color: #fff5f5 !important;
+    border-left: 4px solid #e53e3e !important;
+}
+
+.correct-answer-input {
+    background-color: #f0fff4;
+    border-left: 4px solid #38a169;
+}
+
+.incorrect-answer-input {
+    background-color: #fff5f5;
+    border-left: 4px solid #e53e3e;
+}
+
+.disabled-btn {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.feedback {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.correct-feedback {
+    background-color: #f0fff4;
+    color: #2f855a;
+}
+
+.incorrect-feedback {
+    background-color: #fff5f5;
+    color: #c53030;
+}
+
+.neutral-feedback {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.correct-answer:hover,
+.incorrect-answer:hover {
+    background-color: inherit !important;
 }

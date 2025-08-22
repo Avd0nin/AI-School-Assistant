@@ -1,28 +1,31 @@
 <!DOCTYPE html>
-    <html lang="ru">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AI-School-Assistant</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    </head>
-    <body>
-        <header>
-            <div class="logo">AI-School-Assistant</div>
-        </header>
-        <nav>
-            <ul>
-                <li><a style="color: #ffffff" href="/">Главная</a></li>
-                <li><a style="color: #ffffff" href="/help">Помощь</a></li>
-            </ul>
-        </nav>
-        
-        <main>
-            {% block content %}{% endblock %}  <!-- Сюда подставляется контент страниц -->
-        </main>
-        
-        <footer>
-                <p style="color: #ffffff">&copy; 2025 AI-School-Assistant. Все права защищены.</p>
-        </footer>
-    </body>
-    </html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI-School-Assistant{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">AI-School-Assistant</div>
+    </header>
+    
+    <nav>
+        <ul>
+            <li><a href="/">Главная</a></li>
+            <li><a href="/make_summary">Конспекты</a></li>
+            <li><a href="/make_test">Тесты</a></li>
+            <li><a href="/help">Помощь</a></li>
+        </ul>
+    </nav>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 AI-School-Assistant. Все права защищены.</p>
+    </footer>
+</body>
+</html>
