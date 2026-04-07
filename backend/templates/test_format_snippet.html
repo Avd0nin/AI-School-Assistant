@@ -1,0 +1,28 @@
+<div class="test-container">
+    <!-- Для вопросов с выбором ответа -->
+    <div class="question-block">
+        <div class="question-text">1. Текст вопроса?</div>
+        <ul class="options-list">
+            <li class="option-item">
+                <input type="radio" name="q1" id="q1_1">
+                <label for="q1_1">Вариант 1</label>
+            </li>
+            <li class="option-item">
+                <input type="radio" name="q1" id="q1_2" value="correct">
+                <label for="q1_2">Вариант 2 (правильный)</label>
+            </li>
+        </ul>
+        <button class="check-btn">Проверить ответ</button>
+        <div class="feedback" style="display: none;"></div>
+    </div>
+    
+    <!-- Для вопросов с открытым ответом -->
+    <div class="question-block">
+        <div class="question-text">2. Текст открытого вопроса?</div>
+        <div class="open-question">
+            <textarea class="answer-input" placeholder="Введите ваш ответ..."></textarea>
+            <button class="check-btn">Проверить ответ</button>
+            <div class="feedback" style="display: none;"></div>
+        </div>
+    </div>
+</div>

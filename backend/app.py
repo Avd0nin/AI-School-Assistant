@@ -1,6 +1,5 @@
 from flask import Flask, Response, request, redirect, render_template, url_for
 import requests
-import time
 from flask import jsonify
 import json
 
@@ -42,42 +41,13 @@ class AICore:  # класс для генерации конспектов
         return response.json()['choices'][0]['message']['content']
 
     def create_test(self, subject, klass, theme):
-        data = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "user", "content": f"""
+        test_format_html = render_template('test_format_snippet.html')
+        prompt = f"""
                 Сгенерируй тест по предмету '{subject}' для {klass} класса по теме '{theme}'.
                 (10 разных вопросов)
                 Формат HTML должен быть строго следующим:
                 
-                <div class="test-container">
-                    <!-- Для вопросов с выбором ответа -->
-                    <div class="question-block">
-                        <div class="question-text">1. Текст вопроса?</div>
-                        <ul class="options-list">
-                            <li class="option-item">
-                                <input type="radio" name="q1" id="q1_1">
-                                <label for="q1_1">Вариант 1</label>
-                            </li>
-                            <li class="option-item">
-                                <input type="radio" name="q1" id="q1_2" value="correct">
-                                <label for="q1_2">Вариант 2 (правильный)</label>
-                            </li>
-                        </ul>
-                        <button class="check-btn">Проверить ответ</button>
-                        <div class="feedback" style="display: none;"></div>
-                    </div>
-                    
-                    <!-- Для вопросов с открытым ответом -->
-                    <div class="question-block">
-                        <div class="question-text">2. Текст открытого вопроса?</div>
-                        <div class="open-question">
-                            <textarea class="answer-input" placeholder="Введите ваш ответ..."></textarea>
-                            <button class="check-btn">Проверить ответ</button>
-                            <div class="feedback" style="display: none;"></div>
-                        </div>
-                    </div>
-                </div>
+                {test_format_html}
                 
                 Правила:
                 1. Добавляй кнопку 'Проверить ответ' после каждого вопроса
@@ -85,7 +55,11 @@ class AICore:  # класс для генерации конспектов
                 3. Для вопросов с выбором: правильный вариант помечай value="correct"
                 4. Для открытых вопросов просто добавляй текстовое поле
                 5. Не добавляй никаких дополнительных комментариев
-                """}
+                """
+        data = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "user", "content": prompt}
             ],
             "temperature": 0.7,
             "max_tokens": 4000
@@ -234,60 +208,10 @@ def action():
     subject, klass, theme = request.args.get('subject'), int(request.args.get('klass')), request.args.get('theme')
     if klass < 1 or klass > 11:
         return f"Некорректный класс (должен быть от 1 до 11), у вас {klass}", 400
-    return model.generaty_summary(subject, klass, theme).lstrip('```html\n').rstrip('\n```')
-    print(subject, klass, theme)
-    time.sleep(1)
-    return '''
-    <div style="font-family: Arial, sans-serif; color: #800080; background-color: #f0e6ff; padding: 15px; border-radius: 8px; max-width: 600px; margin: auto;">
-    <h2 style="text-align: center; color: #4b0082;">Конспект по теме "Дроби"</h2>
-    
-    <h3 style="color: #6a0dad;">1. Основные понятия</h3>
-    <p><strong>Дробь</strong> — число вида <span style="font-weight: bold;">a/b</span>, где:</p>
-    <ul>
-        <li><strong>a</strong> — числитель (сколько частей взяли),</li>
-        <li><strong>b</strong> — знаменатель (на сколько частей разделили целое).</li>
-    </ul>
-    
-    <h3 style="color: #6a0dad;">2. Виды дробей</h3>
-    <ul>
-        <li><strong>Правильная</strong> — числитель меньше знаменателя (пример: 2/5).</li>
-        <li><strong>Неправильная</strong> — числитель больше или равен знаменателю (пример: 7/4).</li>
-        <li><strong>Смешанная</strong> — целая часть + дробь (пример: 1 3/4).</li>
-    </ul>
-    
-    <h3 style="color: #6a0dad;">3. Действия с дробями</h3>
-    <p><strong>Сложение/вычитание:</strong></p>
-    <ul>
-        <li>Приводим к общему знаменателю.</li>
-        <li>Складываем/вычитаем числители.</li>
-    </ul>
-    <p>Пример: <br> 1/4 + 1/6 = 3/12 + 2/12 = <strong>5/12</strong></p>
-    
-    <p><strong>Умножение:</strong></p>
-    <ul>
-        <li>Умножаем числители и знаменатели.</li>
-    </ul>
-    <p>Пример: <br> 2/3 × 3/5 = <strong>6/15</strong> = 2/5 (сократили).</p>
-    
-    <p><strong>Деление:</strong></p>
-    <ul>
-        <li>Умножаем на дробь, обратную делителю.</li>
-    </ul>
-    <p>Пример: <br> 4/7 ÷ 2/3 = 4/7 × 3/2 = <strong>12/14</strong> = 6/7.</p>
-    
-    <h3 style="color: #6a0dad;">4. Сокращение дробей</h3>
-    <p>Делим числитель и знаменатель на их НОД.</p>
-    <p>Пример: <br> 8/12 = (8÷4)/(12÷4) = <strong>2/3</strong>.</p>
-    
-    <h3 style="color: #6a0dad;">5. Перевод дробей</h3>
-    <p><strong>Неправильную → смешанную:</strong></p>
-    <p>Пример: <br> 7/3 = 2 1/3 (7÷3=2 и остаток 1).</p>
-    
-    <p><strong>Смешанную → неправильную:</strong></p>
-    <p>Пример: <br> 1 2/5 = (1×5 + 2)/5 = <strong>7/5</strong>.</p>
-    
-    <p style="text-align: center; font-style: italic; color: #4b0082;">Успехов на контрольной! 😊</p>
-    </div>'''
+    try:
+        return model.generaty_summary(subject, klass, theme).lstrip('```html\n').rstrip('\n```')
+    except Exception:
+        return render_template('summary_example_snippet.html')
 
 
 if __name__ == '__main__':

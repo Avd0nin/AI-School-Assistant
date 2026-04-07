@@ -7,24 +7,30 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <header>
-        <div class="logo">AI-School-Assistant</div>
+    <div class="app-bg-orb orb-a"></div>
+    <div class="app-bg-orb orb-b"></div>
+
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="logo">AI-School-Assistant</div>
+            <nav class="site-nav-inline">
+                <ul class="nav-list">
+                    <li><a href="/">Главная</a></li>
+                    <li><a href="/make_summary">Конспекты</a></li>
+                    <li><a href="/chat">Чат</a></li>
+                    <li><a href="/make_test">Тесты</a></li>
+                    <li><a href="/help">Помощь</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="nav-cta">Войти</button>
+        </div>
     </header>
     
-    <nav>
-        <ul>
-            <li><a href="/">Главная</a></li>
-            <li><a href="/make_summary">Конспекты</a></li>
-            <li><a href="/make_test">Тесты</a></li>
-            <li><a href="/help">Помощь</a></li>
-        </ul>
-    </nav>
-    
-    <main>
+    <main class="page-shell">
         {% block content %}{% endblock %}
     </main>
     
-    <footer>
+    <footer class="site-footer">
         <p>&copy; 2025 AI-School-Assistant. Все права защищены.</p>
     </footer>
 </body>

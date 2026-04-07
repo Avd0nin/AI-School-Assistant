@@ -3,37 +3,26 @@
 {% block title %}Главная страница{% endblock %}
 
 {% block content %}
-    <style>
-        .main-content {
-            margin: 0 auto;
-            max-width: 600px;
-            text-align: center;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
-    
+<section class="page-card glass-card">
     <div class="main-content">
-        <!-- Блок загрузки (изначально скрыт) -->
         <div id="loading" class="hidden">
-            <h1>Генерируем для вас конспект, пожалуйста подождите</h1>
+            <h1 class="page-title-sm">Генерируем для вас конспект, пожалуйста подождите</h1>
             <div class="spinner"></div>
         </div>
 
-        <!-- Основной контент (форма и заголовок) -->
         <div id="content">
-            <h1 id="main-title">Генератор конспектов</h1>
-            <form id="params-form">
-                <input type="text" name="subject" placeholder="Предмет" required>
-                <input type="number" name="klass" placeholder="Класс (1 - 11)" required>
-                <input type="text" name="theme" placeholder="Тема" required>
+            <h1 id="main-title" class="page-title">Генератор конспектов</h1>
+            <form id="params-form" autocomplete="off">
+                <input type="text" name="subject" placeholder="Предмет" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                <input type="number" name="klass" placeholder="Класс (1 - 11)" min="1" max="11" required>
+                <input type="text" name="theme" placeholder="Тема" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
                 <button type="submit">Сгенерировать</button>
             </form>
             <a href="/help" class="help-link">Инструкция по использованию</a>
             <div id="result"></div>
         </div>
     </div>
+</section>
 
     <script>
         function goBack() {
@@ -73,7 +62,7 @@
                 })
                 .then(html => {
                     document.getElementById('result').innerHTML = html + `
-                        <div style="margin-top: 1px;">
+                        <div class="result-actions">
                             <button class="back-button" onclick="goBack()">
                                 Назад
                             </button>
@@ -83,7 +72,7 @@
                 .catch(error => {
                     console.error('Ошибка:', error);
                     document.getElementById('result').innerHTML = `
-                        <p style="color: red;">Ошибка: ${error.message}</p>
+                        <p class="error-text">Ошибка: ${error.message}</p>
                     `;
                     // В случае ошибки возвращаем форму
                     document.getElementById('params-form').classList.remove('hidden');
@@ -95,5 +84,6 @@
                     document.getElementById('loading').classList.add('hidden');
                 });
         });
+
     </script>
 {% endblock %}

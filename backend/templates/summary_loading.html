@@ -3,42 +3,33 @@
 {% block title %}Главная страница{% endblock %}
 
 {% block content %}
-<body>
-    <!-- Страница загрузки -->
-    <div id="loading">
+<section class="page-card glass-card">
+    <div id="loading" class="summary-loading">
         <div class="loader"></div>
         <p>Пожалуйста, подождите...</p>
     </div>
 
-    <!-- Основной контент -->
-    <div id="content">
-        <h1>Добро пожаловать на мой сайт!</h1>
+    <div id="content" class="hidden">
+        <h1 class="page-title">Добро пожаловать на мой сайт!</h1>
         <p>Этот контент появится после полной загрузки страницы.</p>
-        <!-- Здесь может быть любой ваш контент -->
     </div>
 
-    <!-- Простой JavaScript -->
     <script>
-        // Ждем, когда вся страница полностью загрузится
         window.addEventListener('load', function() {
-            // Получаем элементы страницы
             var loading = document.getElementById('loading');
             var content = document.getElementById('content');
             
-            // Показываем основной контент
-            content.style.display = 'block';
+            content.classList.remove('hidden');
             
-            // Через небольшой таймаут (для плавности)
             setTimeout(function() {
                 content.style.opacity = '1';
                 loading.style.opacity = '0';
                 
-                // После завершения анимации скрываем загрузку
                 setTimeout(function() {
                     loading.style.display = 'none';
-                }, 500); // 0.5 секунды - время анимации
+                }, 500);
             }, 100);
         });
     </script>
-</body>
+</section>
 {% endblock %}
