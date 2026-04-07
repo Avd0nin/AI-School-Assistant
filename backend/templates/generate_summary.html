@@ -4,14 +4,17 @@
 
 {% block content %}
 <section class="page-card glass-card">
-    <div class="main-content">
+    <div class="main-content summary-main">
         <div id="loading" class="hidden">
-            <h1 class="page-title-sm">Генерируем для вас конспект, пожалуйста подождите</h1>
+            <h1 class="page-title-sm no-copy">Генерируем для вас конспект, пожалуйста подождите</h1>
             <div class="spinner"></div>
+            <div class="loading-hint-strip">
+                <div class="loading-hint no-copy" id="loadingHint"></div>
+            </div>
         </div>
 
         <div id="content">
-            <h1 id="main-title" class="page-title">Генератор конспектов</h1>
+            <h1 id="main-title" class="page-title no-copy">Генератор конспектов</h1>
             <form id="params-form" autocomplete="off">
                 <input type="text" name="subject" placeholder="Предмет" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
                 <input type="number" name="klass" placeholder="Класс (1 - 11)" min="1" max="11" required>
@@ -19,7 +22,7 @@
                 <button type="submit">Сгенерировать</button>
             </form>
             <a href="/help" class="help-link">Инструкция по использованию</a>
-            <div id="result"></div>
+            <div id="result" class="hidden"></div>
         </div>
     </div>
 </section>
@@ -27,6 +30,7 @@
     <script>
         function goBack() {
             document.getElementById('result').innerHTML = '';
+            document.getElementById('result').classList.add('hidden');
             document.getElementById('params-form').classList.remove('hidden');
             document.getElementById('main-title').classList.remove('hidden');
             document.querySelector('.help-link').classList.remove('hidden');
@@ -40,6 +44,32 @@
             form.querySelector('[name="theme"]').value = 'Дроби';
         });
 
+        const loadingHints = [
+            'Загрузка может занять пару минут — это нормально.',
+            'Пока ждёте, можно открыть раздел тестов и потренироваться.',
+            'Совет: после конспекта закрепите тему в ИИ чате вопросами.',
+            'Краткий конспект уже собирается: структура, примеры и ключевые термины.',
+            'Подсказка: чем точнее тема, тем полезнее результат.'
+        ];
+        let loadingHintTimer = null;
+
+        function startLoadingHints() {
+            const hintEl = document.getElementById('loadingHint');
+            if (!hintEl) return;
+            const showRandomHint = () => {
+                hintEl.textContent = loadingHints[Math.floor(Math.random() * loadingHints.length)];
+            };
+            showRandomHint();
+            loadingHintTimer = setInterval(showRandomHint, 2800);
+        }
+
+        function stopLoadingHints() {
+            if (loadingHintTimer) {
+                clearInterval(loadingHintTimer);
+                loadingHintTimer = null;
+            }
+        }
+
         document.getElementById('params-form').addEventListener('submit', function(e) {
             e.preventDefault();  // Отменяем стандартную отправку формы
 
@@ -50,6 +80,8 @@
             
             // Показываем загрузку
             document.getElementById('loading').classList.remove('hidden');
+            startLoadingHints();
+            document.getElementById('result').classList.add('hidden');
 
             // Формируем GET-параметры
             const params = new URLSearchParams(new FormData(this));
@@ -61,19 +93,26 @@
                     return response.text();
                 })
                 .then(html => {
-                    document.getElementById('result').innerHTML = html + `
+                    const cleanHtml = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(html) : html;
+                    document.getElementById('result').innerHTML = `
+                        <article class="summary-article">${cleanHtml}</article>
                         <div class="result-actions">
                             <button class="back-button" onclick="goBack()">
                                 Назад
                             </button>
                         </div>
                     `;
+                    document.getElementById('result').classList.remove('hidden');
+                    if (window.renderMathInContainer) {
+                        window.renderMathInContainer(document.getElementById('result'));
+                    }
                 })
                 .catch(error => {
                     console.error('Ошибка:', error);
                     document.getElementById('result').innerHTML = `
                         <p class="error-text">Ошибка: ${error.message}</p>
                     `;
+                    document.getElementById('result').classList.remove('hidden');
                     // В случае ошибки возвращаем форму
                     document.getElementById('params-form').classList.remove('hidden');
                     document.getElementById('main-title').classList.remove('hidden');
@@ -82,6 +121,7 @@
                 .finally(() => {
                     // В любом случае скрываем загрузку
                     document.getElementById('loading').classList.add('hidden');
+                    stopLoadingHints();
                 });
         });
 

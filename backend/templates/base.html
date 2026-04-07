@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AI-School-Assistant{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
     <div class="app-bg-orb orb-a"></div>
@@ -12,7 +15,7 @@
 
     <header class="site-header">
         <div class="header-inner">
-            <div class="logo">AI-School-Assistant</div>
+            <a href="/" class="logo">AI-School-Assistant</a>
             <nav class="site-nav-inline">
                 <ul class="nav-list">
                     <li><a href="/">Главная</a></li>
@@ -31,7 +34,33 @@
     </main>
     
     <footer class="site-footer">
-        <p>&copy; 2025 AI-School-Assistant. Все права защищены.</p>
+        <p>&copy; 2026 AI-School-Assistant. Все права защищены.</p>
     </footer>
+    <script>
+        function normalizeMathDelimiters(input) {
+            if (typeof input !== 'string') return '';
+            return input
+                .replace(/\\\\\(/g, '\\(')
+                .replace(/\\\\\)/g, '\\)')
+                .replace(/\\\\\[/g, '\\[')
+                .replace(/\\\\\]/g, '\\]');
+        }
+
+        function renderMathInContainer(container) {
+            if (!container || typeof renderMathInElement !== 'function') return;
+            renderMathInElement(container, {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
+            });
+        }
+
+        window.normalizeMathDelimiters = normalizeMathDelimiters;
+        window.renderMathInContainer = renderMathInContainer;
+    </script>
 </body>
 </html>

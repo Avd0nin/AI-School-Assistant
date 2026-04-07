@@ -4,7 +4,7 @@
 
 {% block content %}
 <section class="page-card glass-card container">
-    <h1 class="page-title">Создать тест</h1>
+    <h1 class="page-title no-copy">Создать тест</h1>
     
     <form id="test-form" autocomplete="off">
         <div class="form-group">
@@ -25,7 +25,12 @@
         <button type="submit" class="submit-btn">Сгенерировать тест</button>
     </form>
     
-    <div id="spinner" class="spinner hidden"></div>
+    <div id="test-loading" class="hidden test-loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-hint-strip">
+            <div class="loading-hint no-copy" id="testLoadingHint"></div>
+        </div>
+    </div>
     
     <div id="test-result" class="hidden">
         <button onclick="window.location.reload()" class="back-button">Создать новый тест</button>
@@ -176,10 +181,15 @@ function initTestHandlers() {
         item.addEventListener('click', function() {
             const btn = this.closest('.question-block').querySelector('.check-btn');
             if (btn && !btn.disabled) {
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                }
+
                 this.closest('.options-list').querySelectorAll('.option-item').forEach(opt => {
-                    opt.style.backgroundColor = "";
+                    opt.classList.remove('option-selected');
                 });
-                this.style.backgroundColor = "#f0f0ff";
+                this.classList.add('option-selected');
             }
         });
     });
@@ -189,6 +199,32 @@ function showFeedback(element, message, isSuccess) {
     element.innerHTML = message;
     element.className = isSuccess ? "feedback correct-feedback" : "feedback incorrect-feedback";
     element.style.display = "block";
+}
+
+const testLoadingHints = [
+    'Генерация теста может занять до пары минут — это нормально.',
+    'Пока ждёте, можно открыть конспекты и повторить тему.',
+    'Совет: после теста разберите ошибки через ИИ чат.',
+    'Чем точнее тема, тем полезнее и точнее вопросы.',
+    'Скоро появится готовый тест с вариантами и проверкой.'
+];
+let testLoadingHintTimer = null;
+
+function startTestLoadingHints() {
+    const hintEl = document.getElementById('testLoadingHint');
+    if (!hintEl) return;
+    const showRandomHint = () => {
+        hintEl.textContent = testLoadingHints[Math.floor(Math.random() * testLoadingHints.length)];
+    };
+    showRandomHint();
+    testLoadingHintTimer = setInterval(showRandomHint, 2800);
+}
+
+function stopTestLoadingHints() {
+    if (testLoadingHintTimer) {
+        clearInterval(testLoadingHintTimer);
+        testLoadingHintTimer = null;
+    }
 }
 
 // Обработка генерации теста
@@ -204,7 +240,8 @@ document.getElementById('test-form').addEventListener('submit', function(e) {
         return;
     }
     
-    document.getElementById('spinner').classList.remove('hidden');
+    document.getElementById('test-loading').classList.remove('hidden');
+    startTestLoadingHints();
     document.getElementById('test-form').classList.add('hidden');
     
     fetch(`/api/test?subject=${encodeURIComponent(subject)}&class=${klass}&theme=${encodeURIComponent(theme)}`)
@@ -213,17 +250,26 @@ document.getElementById('test-form').addEventListener('submit', function(e) {
             return response.text();
         })
         .then(html => {
-            document.getElementById('spinner').classList.add('hidden');
+            document.getElementById('test-loading').classList.add('hidden');
+            stopTestLoadingHints();
             document.getElementById('test-content').innerHTML = html;
             document.getElementById('test-result').classList.remove('hidden');
             initTestHandlers();
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('spinner').classList.add('hidden');
+            document.getElementById('test-loading').classList.add('hidden');
+            stopTestLoadingHints();
             document.getElementById('test-form').classList.remove('hidden');
             alert('Ошибка при генерации теста: ' + error.message);
         });
+});
+
+document.addEventListener('copy', function(e) {
+    const testContent = document.getElementById('test-content');
+    if (!testContent || !testContent.contains(e.target)) return;
+    if (e.target.closest('.answer-input')) return;
+    e.preventDefault();
 });
 
 </script>

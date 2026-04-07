@@ -2,6 +2,7 @@ from flask import Flask, Response, request, redirect, render_template, url_for
 import requests
 from flask import jsonify
 import json
+import re
 
 
 class AICore:  # класс для генерации конспектов
@@ -22,10 +23,24 @@ class AICore:  # класс для генерации конспектов
                     "temperature": 1,  # управление креативностью (0-1)
                     "max_tokens": 2000   # ограничение длины ответа
                 }
-        data['messages'][0]['content'] = f'отвечай с форматированием html (оставь только body) и только по теме вопроса (абсолютно без постороннего контента, без побочных надписей). представь, что ты учитель школьного предмета "{subject}" в {klass} классе. твой ученик хочет подготовится к контрольной работе по теме {theme}. подготовь для него краткий, но ёмкий конспект.'
+        data['messages'][0]['content'] = f'отвечай с форматированием html (оставь только body) и только по теме вопроса (абсолютно без постороннего контента, без побочных надписей). все математические формулы пиши строго в latex-нотации в разделителях \\( ... \\) для строковых формул и \\[ ... \\] для блочных (без двойных экранирований). представь, что ты учитель школьного предмета "{subject}" в {klass} классе. твой ученик хочет подготовится к контрольной работе по теме {theme}. пиши максимально понятно и структурированно: чаще используй короткие списки, подзаголовки и блок «самое важное» (когда это уместно), добавляй короткие примеры. заголовок h1 начинай сразу с темы и класса, без слов «краткий конспект по теме».'
         response = requests.post(self.url, json=data, headers=self.headers)
-        print(response.json()['choices'][0]['message']['content'])
-        return response.json()['choices'][0]['message']['content']
+        raw_content = response.json()['choices'][0]['message']['content']
+        print(raw_content)
+        return self.normalize_summary_html(raw_content)
+
+    def normalize_summary_html(self, html):
+        if not html:
+            return html
+
+        cleaned = html.replace('```html', '').replace('```', '').strip()
+        cleaned = re.sub(
+            r'(<h1[^>]*>\s*)Краткий\s+конспект\s+по\s+теме\s*',
+            r'\1',
+            cleaned,
+            flags=re.IGNORECASE
+        )
+        return cleaned
     
     def answer_question(self, subject, klass, theme, question, history):
         data = {
@@ -36,9 +51,12 @@ class AICore:  # класс для генерации конспектов
                     "temperature": 1,  # управление креативностью (0-1)
                     "max_tokens": 2000   # ограничение длины ответа
                 }
-        data['messages'][0]['content'] = f'отвечай только по теме вопроса (без постороннего контента, без побочных надписей) а также абсолютно без форматирования (исключительно пробелы и переносы строк). представь, что ты учитель школьного предмета "{subject}" в {klass} классе. у твоего ученика есть вопрос по теме "{theme}": {question}. ответь на вопрос ученика подробно и озабочено.'
+        safe_subject = subject or "школьные предметы"
+        safe_theme = theme or "любая учебная тема"
+        data['messages'][0]['content'] = f'Отвечай только по учебной теме без постороннего контента. Формат ответа: HTML-фрагмент (без тегов html/head/body), используй заголовки, абзацы, списки, выделения и уместные эмодзи для наглядности. Все математические формулы пиши в latex в разделителях \\( ... \\) или \\[ ... \\], без двойных экранирований. Не используй script/style/iframe и не добавляй служебные пометки. Ты дружелюбный школьный наставник по предмету "{safe_subject}" для {klass} класса. Текущая тема: "{safe_theme}". Вопрос ученика: {question}. Ответь подробно, структурировано и понятно.'
         response = requests.post(self.url, json=data, headers=self.headers)
-        return response.json()['choices'][0]['message']['content']
+        content = response.json()['choices'][0]['message']['content']
+        return content.replace('```html', '').replace('```', '').strip()
 
     def create_test(self, subject, klass, theme):
         test_format_html = render_template('test_format_snippet.html')
@@ -111,10 +129,14 @@ def make_test():
 @app.route('/api/question', methods=['POST'])
 def asking():
     data = request.get_json()
-    subject, klass, theme, question, history = data['subject'], int(data['klass']), data['theme'], data['question'], data['message_history']
-    print(data['message_history'])
-    #subject, klass, theme, question = request.args.get('subject'), int(request.args.get('klass')), request.args.get('theme'), request.args.get('question')
-    #return 'ыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыыы'
+    subject = (data.get('subject') or '').strip()
+    theme = (data.get('theme') or '').strip()
+    question = (data.get('question') or '').strip()
+    history = data.get('message_history', [])
+    try:
+        klass = int(data.get('klass', 6))
+    except (TypeError, ValueError):
+        klass = 6
     return model.answer_question(subject, klass, theme, question, history)
 
 # API для генерации теста
@@ -209,7 +231,7 @@ def action():
     if klass < 1 or klass > 11:
         return f"Некорректный класс (должен быть от 1 до 11), у вас {klass}", 400
     try:
-        return model.generaty_summary(subject, klass, theme).lstrip('```html\n').rstrip('\n```')
+        return model.generaty_summary(subject, klass, theme)
     except Exception:
         return render_template('summary_example_snippet.html')
 

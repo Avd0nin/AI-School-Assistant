@@ -4,18 +4,13 @@
 
 {% block content %}
 <section id="chat-window" class="page-card glass-card chat-page">
-    <div class="chat-context">
-        <span class="context-pill">Предмет: Математика</span>
-        <span class="context-pill">Класс: 6</span>
-        <span class="context-pill">Тема: Дроби</span>
-    </div>
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">
             <div class="message assistant">
                 <div class="avatar assistant">AI</div>
                 <div>
                     <div class="message-content">
-                        Привет! Я ваш сайт. Задавайте любые вопросы о моем функционале, содержании или возможностях. Чем могу помочь?
+                        Привет! Я помогу с учебой: объясню тему, дам план подготовки, сделаю краткий разбор и примеры. С чего начнем?
                     </div>
                     <div class="message-time" id="welcomeTime"></div>
                 </div>
@@ -38,10 +33,6 @@
 </section>
 
 <script>
-       const subject = 'Математика';
-       const klass = '6';
-       const theme = 'Дроби';
-
        class ChatBot {
             constructor() {
                 this.chatMessages = document.getElementById('chatMessages');
@@ -100,7 +91,12 @@
                 
                 const messageContent = document.createElement('div');
                 messageContent.className = 'message-content';
-                messageContent.textContent = text;
+                if (sender === 'assistant') {
+                    const normalized = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(text) : text;
+                    messageContent.innerHTML = this.sanitizeHtml(normalized);
+                } else {
+                    messageContent.textContent = text;
+                }
                 
                 const timeDiv = document.createElement('div');
                 timeDiv.className = 'message-time';
@@ -118,7 +114,30 @@
                 }
                 
                 this.chatMessages.insertBefore(messageDiv, this.typingIndicator);
-                this.scrollToBottom();
+                if (sender === 'assistant' && window.renderMathInContainer) {
+                    window.renderMathInContainer(messageContent);
+                }
+            }
+
+            sanitizeHtml(rawHtml) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawHtml || '', 'text/html');
+                const blockedTags = ['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta'];
+                blockedTags.forEach(tag => {
+                    doc.querySelectorAll(tag).forEach(el => el.remove());
+                });
+
+                doc.querySelectorAll('*').forEach(el => {
+                    [...el.attributes].forEach(attr => {
+                        const name = attr.name.toLowerCase();
+                        const value = (attr.value || '').toLowerCase();
+                        if (name.startsWith('on') || name === 'style' || value.includes('javascript:')) {
+                            el.removeAttribute(attr.name);
+                        }
+                    });
+                });
+
+                return doc.body.innerHTML;
             }
             
             generateResponse(userMessage) {
@@ -134,9 +153,6 @@
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            subject: subject,
-                            klass: klass,
-                            theme: theme,
                             question: message,
                             message_history: this.messagesData
                         })
@@ -161,7 +177,6 @@
             
             showTyping() {
                 this.typingIndicator.style.display = 'block';
-                this.scrollToBottom();
             }
             
             hideTyping() {
@@ -176,11 +191,6 @@
                 });
             }
             
-            scrollToBottom() {
-                setTimeout(() => {
-                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-                }, 100);
-            }
         }
         document.addEventListener('DOMContentLoaded', () => {
             new ChatBot();
