@@ -7,7 +7,7 @@ import json
 class AICore:  # класс для генерации конспектов
     def __init__(self):
         self.url = "https://api.deepseek.com/v1/chat/completions"
-        self.api_key = "sk-338c16a44f21420282495748d4f8b729"
+        self.api_key = "sk-cee10c3cbb36486c94a01b526b439248"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
