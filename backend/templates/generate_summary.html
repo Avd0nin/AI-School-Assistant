@@ -16,9 +16,9 @@
         <div id="content">
             <h1 id="main-title" class="page-title no-copy">Генератор конспектов</h1>
             <form id="params-form" autocomplete="off">
-                <input type="text" name="subject" placeholder="Предмет" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                <input type="number" name="klass" placeholder="Класс (1 - 11)" min="1" max="11" required>
-                <input type="text" name="theme" placeholder="Тема" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                <input type="text" name="subject" placeholder="Например: Математика" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                <input type="number" name="klass" placeholder="От 1 до 11" min="1" max="11" required>
+                <input type="text" name="theme" placeholder="Например: Дроби" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
                 <button type="submit">Сгенерировать</button>
             </form>
             <a href="/help" class="help-link">Инструкция по использованию</a>
@@ -35,14 +35,6 @@
             document.getElementById('main-title').classList.remove('hidden');
             document.querySelector('.help-link').classList.remove('hidden');
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Устанавливаем значения по умолчанию
-            const form = document.getElementById('params-form');
-            form.querySelector('[name="subject"]').value = 'Математика';
-            form.querySelector('[name="klass"]').value = '6';
-            form.querySelector('[name="theme"]').value = 'Дроби';
-        });
 
         const loadingHints = [
             'Загрузка может занять пару минут — это нормально.',
@@ -68,6 +60,62 @@
                 clearInterval(loadingHintTimer);
                 loadingHintTimer = null;
             }
+        }
+
+        function enhanceSummaryCodeBlocks(container) {
+            if (!container) return;
+            const preBlocks = container.querySelectorAll('pre');
+            preBlocks.forEach(pre => {
+                if (pre.dataset.enhanced === '1') return;
+
+                const codeEl = pre.querySelector('code') || pre;
+                const classText = (codeEl.className || '') + ' ' + (pre.className || '');
+                const langMatch = classText.match(/language-([a-z0-9_-]+)/i);
+                const lang = langMatch ? langMatch[1].toUpperCase() : 'КОД';
+
+                const wrap = document.createElement('div');
+                wrap.className = 'summary-code-wrap';
+
+                const head = document.createElement('div');
+                head.className = 'summary-code-head';
+
+                const langTag = document.createElement('span');
+                langTag.className = 'summary-code-lang no-copy';
+                langTag.textContent = lang;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.type = 'button';
+                copyBtn.className = 'summary-copy-btn';
+                copyBtn.textContent = 'Скопировать';
+                copyBtn.addEventListener('click', async () => {
+                    const textToCopy = codeEl.textContent || '';
+                    try {
+                        await navigator.clipboard.writeText(textToCopy);
+                        copyBtn.textContent = 'Скопировано';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Скопировать';
+                        }, 1200);
+                    } catch (e) {
+                        copyBtn.textContent = 'Ошибка';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Скопировать';
+                        }, 1200);
+                    }
+                });
+
+                head.appendChild(langTag);
+                head.appendChild(copyBtn);
+
+                pre.parentNode.insertBefore(wrap, pre);
+                wrap.appendChild(head);
+                wrap.appendChild(pre);
+
+                if (window.hljs && codeEl) {
+                    window.hljs.highlightElement(codeEl);
+                }
+
+                pre.dataset.enhanced = '1';
+            });
         }
 
         document.getElementById('params-form').addEventListener('submit', function(e) {
@@ -106,6 +154,7 @@
                     if (window.renderMathInContainer) {
                         window.renderMathInContainer(document.getElementById('result'));
                     }
+                    enhanceSummaryCodeBlocks(document.getElementById('result'));
                 })
                 .catch(error => {
                     console.error('Ошибка:', error);

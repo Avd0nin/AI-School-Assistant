@@ -121,6 +121,9 @@ function initTestHandlers() {
                     correctAnswerDiv.style.display = 'block';
                     correctAnswerDiv.querySelector('.correct-answer-text').textContent = 
                         correct.nextElementSibling.textContent.trim();
+                    if (window.renderMathInContainer) {
+                        window.renderMathInContainer(correctAnswerDiv);
+                    }
                 }
             }
         } 
@@ -164,6 +167,9 @@ function initTestHandlers() {
                     correctAnswerDiv.style.display = 'block';
                     correctAnswerDiv.querySelector('.correct-answer-text').textContent = 
                         result.correct_answer;
+                    if (window.renderMathInContainer) {
+                        window.renderMathInContainer(correctAnswerDiv);
+                    }
                 }
             } catch (error) {
                 console.error("Ошибка:", error);
@@ -252,7 +258,11 @@ document.getElementById('test-form').addEventListener('submit', function(e) {
         .then(html => {
             document.getElementById('test-loading').classList.add('hidden');
             stopTestLoadingHints();
-            document.getElementById('test-content').innerHTML = html;
+            const normalizedHtml = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(html) : html;
+            document.getElementById('test-content').innerHTML = normalizedHtml;
+            if (window.renderMathInContainer) {
+                window.renderMathInContainer(document.getElementById('test-content'));
+            }
             document.getElementById('test-result').classList.remove('hidden');
             initTestHandlers();
         })
