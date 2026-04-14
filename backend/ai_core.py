@@ -1,3 +1,9 @@
+from openai import OpenAI
+from flask import Flask, request, render_template, jsonify
+import json
+import re
+
+
 class AICore:
     def __init__(self):
         self.client = OpenAI(

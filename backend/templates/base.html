@@ -1,9 +1,22 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AI-School-Assistant{% endblock %}</title>
+    <script>
+        (function setInitialTheme() {
+            const themeKey = 'theme';
+            try {
+                const savedTheme = localStorage.getItem(themeKey);
+                const nextTheme = savedTheme === 'light' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', nextTheme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
@@ -11,13 +24,17 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/highlight.min.js"></script>
 </head>
+
 <body>
     <div class="app-bg-orb orb-a"></div>
     <div class="app-bg-orb orb-b"></div>
 
     <header class="site-header">
         <div class="header-inner">
-            <a href="/" class="logo">AI-School-Assistant</a>
+            <a href="/" class="logo">
+                <span class="logo-text">PhantomHelper</span>
+                <span class="logo-mark" aria-hidden="true">AI</span>
+            </a>
             <nav class="site-nav-inline">
                 <ul class="nav-list">
                     <li><a href="/">Главная</a></li>
@@ -27,16 +44,38 @@
                     <li><a href="/help">Помощь</a></li>
                 </ul>
             </nav>
-            <button type="button" class="nav-cta">Войти</button>
+            <div class="header-actions">
+                <button type="button" class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <span class="theme-icon theme-icon-sun" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <line x1="12" y1="2.5" x2="12" y2="5"></line>
+                            <line x1="12" y1="19" x2="12" y2="21.5"></line>
+                            <line x1="2.5" y1="12" x2="5" y2="12"></line>
+                            <line x1="19" y1="12" x2="21.5" y2="12"></line>
+                            <line x1="5.2" y1="5.2" x2="7" y2="7"></line>
+                            <line x1="17" y1="17" x2="18.8" y2="18.8"></line>
+                            <line x1="17" y1="7" x2="18.8" y2="5.2"></line>
+                            <line x1="5.2" y1="18.8" x2="7" y2="17"></line>
+                        </svg>
+                    </span>
+                    <span class="theme-icon theme-icon-moon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M20 14.2A8.5 8.5 0 1 1 9.8 4 6.8 6.8 0 1 0 20 14.2Z"></path>
+                        </svg>
+                    </span>
+                </button>
+                <button type="button" class="nav-cta">Войти</button>
+            </div>
         </div>
     </header>
-    
+
     <main class="page-shell">
         {% block content %}{% endblock %}
     </main>
-    
+
     <footer class="site-footer">
-        <p>&copy; 2026 AI-School-Assistant. Все права защищены.</p>
+        <p>&copy; 2026 PhantomHelperAI. Все права защищены.</p>
     </footer>
     <script>
         function normalizeMathDelimiters(input) {
@@ -52,10 +91,10 @@
             if (!container || typeof renderMathInElement !== 'function') return;
             renderMathInElement(container, {
                 delimiters: [
-                    {left: '\\(', right: '\\)', display: false},
-                    {left: '\\[', right: '\\]', display: true},
-                    {left: '$$', right: '$$', display: true},
-                    {left: '$', right: '$', display: false}
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false }
                 ],
                 throwOnError: false
             });
@@ -63,6 +102,84 @@
 
         window.normalizeMathDelimiters = normalizeMathDelimiters;
         window.renderMathInContainer = renderMathInContainer;
+
+        (function initThemeToggle() {
+            const root = document.documentElement;
+            const toggleButton = document.getElementById('themeToggle');
+            if (!toggleButton) return;
+
+            const themeKey = 'theme';
+            const getTheme = () => root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+
+            const updateToggleState = () => {
+                const isLight = getTheme() === 'light';
+                toggleButton.setAttribute('title', isLight ? 'Включить тёмную тему' : 'Включить светлую тему');
+                toggleButton.setAttribute('aria-label', isLight ? 'Включить тёмную тему' : 'Включить светлую тему');
+                toggleButton.setAttribute('aria-pressed', String(isLight));
+            };
+
+            const applyTheme = (theme, persist = true) => {
+                const nextTheme = theme === 'light' ? 'light' : 'dark';
+                root.setAttribute('data-theme', nextTheme);
+                if (persist) {
+                    try {
+                        localStorage.setItem(themeKey, nextTheme);
+                    } catch (e) {
+                        // Ignore storage errors in private mode/restricted environments.
+                    }
+                }
+                updateToggleState();
+            };
+
+            updateToggleState();
+
+            toggleButton.addEventListener('click', () => {
+                const nextTheme = getTheme() === 'light' ? 'dark' : 'light';
+                applyTheme(nextTheme);
+            });
+        })();
+
+        (function initAutoHideHeader() {
+            const header = document.querySelector('.site-header');
+            if (!header) return;
+
+            let lastScrollY = window.scrollY;
+            let ticking = false;
+            const delta = 8;
+            const revealAtTop = 64;
+
+            const updateHeaderState = () => {
+                const currentScrollY = window.scrollY;
+                const passedHeader = currentScrollY > header.offsetHeight + 20;
+                const scrolledDown = currentScrollY - lastScrollY > delta;
+                const scrolledUp = lastScrollY - currentScrollY > delta;
+
+                if (currentScrollY <= revealAtTop) {
+                    header.classList.remove('is-hidden');
+                } else if (passedHeader && scrolledDown) {
+                    header.classList.add('is-hidden');
+                } else if (scrolledUp) {
+                    header.classList.remove('is-hidden');
+                }
+
+                lastScrollY = currentScrollY;
+                ticking = false;
+            };
+
+            window.addEventListener('scroll', () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(updateHeaderState);
+                    ticking = true;
+                }
+            }, { passive: true });
+
+            document.addEventListener('focusin', (event) => {
+                if (header.contains(event.target)) {
+                    header.classList.remove('is-hidden');
+                }
+            });
+        })();
     </script>
 </body>
+
 </html>
