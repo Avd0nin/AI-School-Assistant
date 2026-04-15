@@ -120,6 +120,7 @@
 
             const applyTheme = (theme, persist = true) => {
                 const nextTheme = theme === 'light' ? 'light' : 'dark';
+                root.classList.add('theme-switching');
                 root.setAttribute('data-theme', nextTheme);
                 if (persist) {
                     try {
@@ -129,6 +130,9 @@
                     }
                 }
                 updateToggleState();
+                window.setTimeout(() => {
+                    root.classList.remove('theme-switching');
+                }, 420);
             };
 
             updateToggleState();

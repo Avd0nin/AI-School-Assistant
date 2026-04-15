@@ -41,6 +41,27 @@ body {
     position: relative;
 }
 
+html.theme-switching body,
+html.theme-switching .header-inner,
+html.theme-switching .page-card,
+html.theme-switching .hero-panel,
+html.theme-switching .container,
+html.theme-switching .chat-container,
+html.theme-switching .chat-messages,
+html.theme-switching .message-content,
+html.theme-switching .site-footer,
+html.theme-switching .nav-list a,
+html.theme-switching .theme-toggle,
+html.theme-switching input,
+html.theme-switching textarea,
+html.theme-switching button,
+html.theme-switching .summary-article .summary-callout,
+html.theme-switching .summary-article .summary-code-wrap,
+html.theme-switching .message.assistant .message-content .summary-code-wrap,
+html.theme-switching .summary-article .katex-display {
+    transition: background-color 0.38s ease, color 0.38s ease, border-color 0.38s ease, box-shadow 0.38s ease;
+}
+
 .app-bg-orb {
     position: fixed;
     filter: blur(105px);
@@ -858,7 +879,8 @@ a:hover {
     background: linear-gradient(130deg, rgba(96, 214, 176, 0.2), rgba(123, 214, 255, 0.08));
 }
 
-.summary-article .summary-code-wrap {
+.summary-article .summary-code-wrap,
+.message.assistant .message-content .summary-code-wrap {
     margin: 14px 0;
     border-radius: 12px;
     border: 1px solid rgba(166, 184, 223, 0.26);
@@ -866,7 +888,8 @@ a:hover {
     overflow: hidden;
 }
 
-.summary-article .summary-code-head {
+.summary-article .summary-code-head,
+.message.assistant .message-content .summary-code-head {
     min-height: 42px;
     display: flex;
     align-items: center;
@@ -877,14 +900,16 @@ a:hover {
     background: linear-gradient(130deg, rgba(114, 98, 255, 0.24), rgba(86, 171, 255, 0.16));
 }
 
-.summary-article .summary-code-lang {
+.summary-article .summary-code-lang,
+.message.assistant .message-content .summary-code-lang {
     font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0.04em;
     color: #e8efff;
 }
 
-.summary-article .summary-copy-btn {
+.summary-article .summary-copy-btn,
+.message.assistant .message-content .summary-copy-btn {
     min-height: 32px;
     padding: 4px 12px;
     border-radius: 9px;
@@ -896,30 +921,97 @@ a:hover {
     cursor: pointer;
 }
 
-.summary-article .summary-copy-btn:hover {
+.summary-article .summary-copy-btn:hover,
+.message.assistant .message-content .summary-copy-btn:hover {
     filter: brightness(1.08);
 }
 
-.summary-article pre {
+.summary-article pre,
+.message.assistant .message-content pre {
     margin: 0;
     padding: 12px 14px;
     background: transparent !important;
     overflow-x: auto;
 }
 
-.summary-article pre code {
+.summary-article pre code,
+.message.assistant .message-content pre code {
     color: #e9f1ff;
     font-size: 0.95rem;
     line-height: 1.55;
 }
 
-.summary-article :not(pre) > code {
+.summary-article :not(pre) > code,
+.message.assistant .message-content :not(pre) > code {
     padding: 2px 7px;
     border-radius: 7px;
     border: 1px solid rgba(166, 184, 223, 0.26);
     background: rgba(112, 142, 255, 0.12);
     color: #eef4ff;
     font-size: 0.9em;
+}
+
+html[data-theme='dark'] .summary-article .summary-code-wrap,
+html[data-theme='dark'] .message.assistant .message-content .summary-code-wrap {
+    border-color: rgba(138, 165, 226, 0.28);
+    background: rgba(6, 12, 28, 0.94);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html[data-theme='dark'] .summary-article .summary-code-head,
+html[data-theme='dark'] .message.assistant .message-content .summary-code-head {
+    border-bottom-color: rgba(138, 165, 226, 0.25);
+    background: linear-gradient(130deg, rgba(88, 104, 240, 0.34), rgba(73, 152, 235, 0.22));
+}
+
+html[data-theme='dark'] .summary-article pre,
+html[data-theme='dark'] .message.assistant .message-content pre {
+    background: rgba(4, 9, 22, 0.96) !important;
+}
+
+html[data-theme='dark'] .summary-article pre code,
+html[data-theme='dark'] .message.assistant .message-content pre code {
+    color: #eaf2ff !important;
+}
+
+html[data-theme='dark'] .summary-article pre code.hljs,
+html[data-theme='dark'] .message.assistant .message-content pre code.hljs {
+    background: transparent !important;
+}
+
+html[data-theme='dark'] .summary-article pre code .hljs-keyword,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-keyword,
+html[data-theme='dark'] .summary-article pre code .hljs-selector-tag,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-selector-tag {
+    color: #c7a8ff !important;
+}
+
+html[data-theme='dark'] .summary-article pre code .hljs-string,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-string,
+html[data-theme='dark'] .summary-article pre code .hljs-attr,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-attr {
+    color: #9de7c2 !important;
+}
+
+html[data-theme='dark'] .summary-article pre code .hljs-number,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-number,
+html[data-theme='dark'] .summary-article pre code .hljs-literal,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-literal {
+    color: #ffc987 !important;
+}
+
+html[data-theme='dark'] .summary-article pre code .hljs-title,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-title,
+html[data-theme='dark'] .summary-article pre code .hljs-function .hljs-title,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-function .hljs-title {
+    color: #82c7ff !important;
+}
+
+html[data-theme='dark'] .summary-article pre code .hljs-comment,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-comment,
+html[data-theme='dark'] .summary-article pre code .hljs-quote,
+html[data-theme='dark'] .message.assistant .message-content pre code .hljs-quote {
+    color: #96a6c8 !important;
 }
 
 .spinner,
@@ -1227,13 +1319,6 @@ strong {
     -webkit-user-select: text;
 }
 
-.message.assistant .message-content code {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(166, 184, 223, 0.2);
-    border-radius: 6px;
-    padding: 1px 6px;
-}
-
 .message.assistant .message-content mark {
     background: transparent !important;
     color: inherit !important;
@@ -1243,6 +1328,7 @@ strong {
 .message.user .message-content {
     color: #f4f7ff;
     background: linear-gradient(135deg, rgba(115, 90, 255, 0.94), rgba(79, 137, 255, 0.9));
+    white-space: pre-wrap;
 }
 
 .message.assistant .message-content {
@@ -1564,24 +1650,85 @@ html[data-theme='light'] .summary-article blockquote {
     background: linear-gradient(130deg, rgba(121, 145, 211, 0.18), rgba(113, 187, 235, 0.14));
 }
 
-html[data-theme='light'] .summary-article .summary-code-wrap {
+html[data-theme='light'] .summary-article .summary-code-wrap,
+html[data-theme='light'] .message.assistant .message-content .summary-code-wrap {
     border-color: rgba(97, 123, 182, 0.3);
     background: rgba(245, 249, 255, 0.9);
 }
 
-html[data-theme='light'] .summary-article .summary-code-head {
+html[data-theme='light'] .summary-article .summary-code-head,
+html[data-theme='light'] .message.assistant .message-content .summary-code-head {
     border-bottom-color: rgba(97, 123, 182, 0.26);
     background: linear-gradient(130deg, rgba(108, 123, 220, 0.24), rgba(93, 168, 230, 0.2));
 }
 
-html[data-theme='light'] .summary-article .summary-code-lang {
+html[data-theme='light'] .summary-article .summary-code-lang,
+html[data-theme='light'] .message.assistant .message-content .summary-code-lang {
     color: #223969;
 }
 
-html[data-theme='light'] .summary-article :not(pre) > code {
+html[data-theme='light'] .summary-article :not(pre) > code,
+html[data-theme='light'] .message.assistant .message-content :not(pre) > code {
     border-color: rgba(97, 123, 182, 0.3);
     background: rgba(88, 120, 197, 0.12);
     color: #203866;
+}
+
+html[data-theme='light'] .summary-article pre,
+html[data-theme='light'] .message.assistant .message-content pre {
+    background: rgba(247, 251, 255, 0.95) !important;
+}
+
+html[data-theme='light'] .summary-article pre code,
+html[data-theme='light'] .message.assistant .message-content pre code {
+    color: #1f3561 !important;
+}
+
+html[data-theme='light'] .summary-article pre code.hljs,
+html[data-theme='light'] .message.assistant .message-content pre code.hljs {
+    background: transparent !important;
+}
+
+html[data-theme='light'] .summary-article .summary-copy-btn,
+html[data-theme='light'] .message.assistant .message-content .summary-copy-btn {
+    border-color: rgba(97, 123, 182, 0.34);
+    background: rgba(255, 255, 255, 0.78);
+    color: #29457a;
+}
+
+html[data-theme='light'] .summary-article pre code .hljs-keyword,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-keyword,
+html[data-theme='light'] .summary-article pre code .hljs-selector-tag,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-selector-tag {
+    color: #7b42d8 !important;
+}
+
+html[data-theme='light'] .summary-article pre code .hljs-string,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-string,
+html[data-theme='light'] .summary-article pre code .hljs-attr,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-attr {
+    color: #0f8a57 !important;
+}
+
+html[data-theme='light'] .summary-article pre code .hljs-number,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-number,
+html[data-theme='light'] .summary-article pre code .hljs-literal,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-literal {
+    color: #b36100 !important;
+}
+
+html[data-theme='light'] .summary-article pre code .hljs-title,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-title,
+html[data-theme='light'] .summary-article pre code .hljs-function .hljs-title,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-function .hljs-title {
+    color: #1e5faf !important;
+}
+
+html[data-theme='light'] .summary-article pre code .hljs-comment,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-comment,
+html[data-theme='light'] .summary-article pre code .hljs-quote,
+html[data-theme='light'] .message.assistant .message-content pre code .hljs-quote {
+    color: #5e739f !important;
 }
 
 html[data-theme='light'] .loading-hint-strip {
@@ -1674,7 +1821,7 @@ html[data-theme='light'] .message.assistant .message-content h3 {
     color: #1d315a;
 }
 
-html[data-theme='light'] .message.assistant .message-content code {
+html[data-theme='light'] .message.assistant .message-content :not(pre) > code {
     background: rgba(90, 121, 194, 0.1);
     border-color: rgba(97, 123, 182, 0.24);
 }

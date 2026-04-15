@@ -46,8 +46,9 @@
             
             init() {
                 this.sendButton.addEventListener('click', () => this.sendMessage());
-                this.chatInput.addEventListener('keypress', (e) => {
+                this.chatInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
+                        e.preventDefault();
                         this.sendMessage();
                     }
                 });
@@ -69,6 +70,8 @@
                 
                 // Показываем индикатор печати
                 this.showTyping();
+                this.scrollToBottom();
+                setTimeout(() => this.scrollToBottom(), 120);
                 
                 this.generateResponse(message);
             }
@@ -93,7 +96,8 @@
                 messageContent.className = 'message-content';
                 if (sender === 'assistant') {
                     const normalized = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(text) : text;
-                    messageContent.innerHTML = this.sanitizeHtml(normalized);
+                    const withCodeBlocks = this.convertCodeFencesToHtml(normalized);
+                    messageContent.innerHTML = this.sanitizeHtml(withCodeBlocks);
                 } else {
                     messageContent.textContent = text;
                 }
@@ -116,6 +120,12 @@
                 this.chatMessages.insertBefore(messageDiv, this.typingIndicator);
                 if (sender === 'assistant' && window.renderMathInContainer) {
                     window.renderMathInContainer(messageContent);
+                }
+                if (sender === 'assistant') {
+                    this.enhanceCodeBlocks(messageContent);
+                }
+                if (sender === 'user') {
+                    this.scrollToBottom();
                 }
             }
 
@@ -140,8 +150,81 @@
                 return doc.body.innerHTML;
             }
 
+            convertCodeFencesToHtml(rawText) {
+                if (!rawText) return '';
+                return rawText.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+                    const safeLang = (lang || '').toLowerCase().trim();
+                    const langClass = safeLang ? `language-${safeLang}` : '';
+                    const escapedCode = String(code)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    return `<pre><code class="${langClass}">${escapedCode}</code></pre>`;
+                });
+            }
+
+            enhanceCodeBlocks(container) {
+                if (!container) return;
+                const preBlocks = container.querySelectorAll('pre');
+                preBlocks.forEach(pre => {
+                    if (pre.dataset.enhanced === '1') return;
+
+                    const codeEl = pre.querySelector('code') || pre;
+                    const classText = (codeEl.className || '') + ' ' + (pre.className || '');
+                    const langMatch = classText.match(/language-([a-z0-9_-]+)/i);
+                    const lang = langMatch ? langMatch[1].toUpperCase() : 'КОД';
+
+                    const wrap = document.createElement('div');
+                    wrap.className = 'summary-code-wrap';
+
+                    const head = document.createElement('div');
+                    head.className = 'summary-code-head';
+
+                    const langTag = document.createElement('span');
+                    langTag.className = 'summary-code-lang no-copy';
+                    langTag.textContent = lang;
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.type = 'button';
+                    copyBtn.className = 'summary-copy-btn';
+                    copyBtn.textContent = 'Скопировать';
+                    copyBtn.addEventListener('click', async () => {
+                        const textToCopy = codeEl.textContent || '';
+                        try {
+                            await navigator.clipboard.writeText(textToCopy);
+                            copyBtn.textContent = 'Скопировано';
+                            setTimeout(() => {
+                                copyBtn.textContent = 'Скопировать';
+                            }, 1200);
+                        } catch (e) {
+                            copyBtn.textContent = 'Ошибка';
+                            setTimeout(() => {
+                                copyBtn.textContent = 'Скопировать';
+                            }, 1200);
+                        }
+                    });
+
+                    head.appendChild(langTag);
+                    head.appendChild(copyBtn);
+                    pre.parentNode.insertBefore(wrap, pre);
+                    wrap.appendChild(head);
+                    wrap.appendChild(pre);
+
+                    if (window.hljs && codeEl) {
+                        window.hljs.highlightElement(codeEl);
+                    }
+
+                    pre.dataset.enhanced = '1';
+                });
+            }
+
+            scrollToBottom() {
+                if (!this.chatMessages) return;
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
             generateResponse(userMessage) {
-                const message = userMessage.toLowerCase();
+                const message = userMessage.trim();
                 
                 if (message === '') {
                     this.addMessage('Я отвечу на ваш вопрос, только уточните)', 'assistant');
