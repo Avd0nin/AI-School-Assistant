@@ -5,40 +5,49 @@
 {% block content %}
 <section class="page-card glass-card container">
     <h1 class="page-title no-copy">Создать тест</h1>
-    
+
     <form id="test-form" autocomplete="off">
         <div class="form-group">
             <label for="subject">Предмет:</label>
             <input type="text" id="subject" name="subject" required placeholder="Например: Математика" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
         </div>
-        
+
         <div class="form-group">
             <label for="class">Класс:</label>
             <input type="number" id="class" name="class" min="1" max="11" required placeholder="От 1 до 11">
         </div>
-        
+
         <div class="form-group">
             <label for="theme">Тема:</label>
             <input type="text" id="theme" name="theme" required placeholder="Например: Дроби" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
         </div>
-        
+
         <button type="submit" class="submit-btn">Сгенерировать тест</button>
     </form>
-    
+
     <div id="test-loading" class="hidden test-loading-wrap">
         <div class="spinner"></div>
         <div class="loading-hint-strip">
             <div class="loading-hint no-copy" id="testLoadingHint"></div>
         </div>
     </div>
-    
+
     <div id="test-result" class="hidden">
         <button onclick="window.location.reload()" class="back-button">Создать новый тест</button>
+        <div id="test-actions" class="test-actions hidden">
+            <button id="save-result-btn" type="button" class="submit-btn">Сохранить результат</button>
+            <p id="test-save-hint" class="test-save-hint"></p>
+        </div>
         <div id="test-content"></div>
     </div>
 </section>
 
 <script>
+let currentTestId = null;
+let testStartedAt = null;
+let handlersBound = false;
+const questionResults = new Map();
+
 async function checkOpenAnswer(questionText, userAnswer, subject) {
     try {
         const response = await fetch('/api/check_answer', {
@@ -52,52 +61,137 @@ async function checkOpenAnswer(questionText, userAnswer, subject) {
                 subject: subject
             })
         });
-        
+
+        if (response.status === 401) {
+            window.location.href = '/login?next=/make_test';
+            throw new Error('Требуется вход');
+        }
+
         if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
         return await response.json();
     } catch (error) {
-        console.error("Ошибка проверки:", error);
+        if (error.message === 'Требуется вход') {
+            throw error;
+        }
+        console.error('Ошибка проверки:', error);
         return {
             is_correct: false,
-            feedback: "Ошибка проверки. Пожалуйста, сверьтесь с учебником.",
-            correct_answer: "Информация недоступна"
+            feedback: 'Ошибка проверки. Пожалуйста, сверьтесь с учебником.',
+            correct_answer: 'Информация недоступна'
         };
     }
 }
 
+function showFeedback(element, message, isSuccess) {
+    element.innerHTML = message;
+    element.className = isSuccess ? 'feedback correct-feedback' : 'feedback incorrect-feedback';
+    element.style.display = 'block';
+}
+
+function initQuestionIndexes() {
+    document.querySelectorAll('#test-content .question-block').forEach((questionBlock, index) => {
+        questionBlock.dataset.questionIndex = String(index);
+    });
+}
+
+function updateSaveHint(customMessage = '') {
+    const hintEl = document.getElementById('test-save-hint');
+    if (!hintEl) return;
+
+    if (customMessage) {
+        hintEl.textContent = customMessage;
+        return;
+    }
+
+    const total = document.querySelectorAll('#test-content .question-block').length;
+    const answered = questionResults.size;
+    const correct = [...questionResults.values()].filter(Boolean).length;
+    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+    hintEl.textContent = `Проверено: ${answered}/${total}. Правильных: ${correct}. Текущий результат: ${score}%.`;
+}
+
+function resetTestState(testId) {
+    const actions = document.getElementById('test-actions');
+
+    currentTestId = testId ? Number(testId) : null;
+    testStartedAt = Date.now();
+    questionResults.clear();
+
+    if (!actions) return;
+
+    if (currentTestId) {
+        actions.classList.remove('hidden');
+        updateSaveHint('Проверьте ответы, затем сохраните результат в профиль.');
+    } else {
+        actions.classList.add('hidden');
+    }
+}
+
+function markQuestionResult(questionBlock, isCorrect) {
+    if (!questionBlock) return;
+    const index = Number(questionBlock.dataset.questionIndex);
+    if (Number.isNaN(index)) return;
+    questionResults.set(index, Boolean(isCorrect));
+    updateSaveHint();
+}
+
 function initTestHandlers() {
-    // Обработка нажатия на кнопки проверки
+    if (handlersBound) return;
+    handlersBound = true;
+
     document.addEventListener('click', async function(e) {
+        const optionItem = e.target.closest('.option-item');
+        if (optionItem && optionItem.closest('#test-content')) {
+            const questionBlock = optionItem.closest('.question-block');
+            const checkButton = questionBlock ? questionBlock.querySelector('.check-btn') : null;
+            if (checkButton && !checkButton.disabled) {
+                const radio = optionItem.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                }
+                optionItem.closest('.options-list').querySelectorAll('.option-item').forEach(opt => {
+                    opt.classList.remove('option-selected');
+                });
+                optionItem.classList.add('option-selected');
+            }
+            return;
+        }
+
+        if (e.target.id === 'save-result-btn') {
+            await saveTestResult();
+            return;
+        }
+
         if (!e.target.classList.contains('check-btn')) return;
-        
+
         const btn = e.target;
         const questionBlock = btn.closest('.question-block');
         const feedback = questionBlock.querySelector('.feedback');
         const correctAnswerDiv = questionBlock.querySelector('.correct-answer');
-        
-        // Для вопросов с вариантами
+
         if (questionBlock.querySelector('.options-list')) {
             if (btn.disabled) return;
-            
+
             btn.disabled = true;
             btn.classList.add('disabled-btn');
-            
+
             const selected = questionBlock.querySelector('input[type="radio"]:checked');
-            
+
             if (!selected) {
-                showFeedback(feedback, "Пожалуйста, выберите ответ", false);
+                showFeedback(feedback, 'Пожалуйста, выберите ответ', false);
                 btn.disabled = false;
                 btn.classList.remove('disabled-btn');
                 return;
             }
-            
-            const isCorrect = selected.value === "correct";
-            showFeedback(feedback, 
-                isCorrect ? "✅ Верно! Отличный ответ!" : "❌ Неверно. Правильный ответ выделен зеленым.",
+
+            const isCorrect = selected.value === 'correct';
+            showFeedback(
+                feedback,
+                isCorrect ? '✅ Верно! Отличный ответ!' : '❌ Неверно. Правильный ответ выделен зеленым.',
                 isCorrect
             );
-            
-            // Подсветка ответов и отключение выбора
+
             const optionsList = questionBlock.querySelector('.options-list');
             optionsList.querySelectorAll('.option-item').forEach(item => {
                 item.classList.remove('correct-answer', 'incorrect-answer');
@@ -108,53 +202,51 @@ function initTestHandlers() {
                 item.onmouseover = null;
                 item.onmouseout = null;
             });
-            
+
             if (!isCorrect) {
                 selected.closest('.option-item').classList.add('incorrect-answer');
             }
-            
+
             const correct = questionBlock.querySelector('input[value="correct"]');
             if (correct) {
                 correct.closest('.option-item').classList.add('correct-answer');
-                
+
                 if (correctAnswerDiv) {
                     correctAnswerDiv.style.display = 'block';
-                    correctAnswerDiv.querySelector('.correct-answer-text').textContent = 
+                    correctAnswerDiv.querySelector('.correct-answer-text').textContent =
                         correct.nextElementSibling.textContent.trim();
                     if (window.renderMathInContainer) {
                         window.renderMathInContainer(correctAnswerDiv);
                     }
                 }
             }
-        } 
-        // Для открытых вопросов
-        else if (questionBlock.querySelector('.answer-input')) {
+
+            markQuestionResult(questionBlock, isCorrect);
+        } else if (questionBlock.querySelector('.answer-input')) {
             const answerInput = questionBlock.querySelector('.answer-input');
             const questionText = questionBlock.querySelector('.question-text').textContent;
             const userAnswer = answerInput.value.trim();
-            
+
             if (!userAnswer) {
-                showFeedback(feedback, "Пожалуйста, введите ваш ответ", false);
+                showFeedback(feedback, 'Пожалуйста, введите ваш ответ', false);
                 return;
             }
-            
-            // Сбрасываем предыдущие стили
+
             answerInput.classList.remove('correct-answer-input', 'incorrect-answer-input');
-            feedback.textContent = "⌛ Проверяем ответ...";
-            feedback.className = "feedback neutral-feedback";
-            feedback.style.display = "block";
-            
-            // Блокируем кнопку только на время проверки
+            feedback.textContent = '⌛ Проверяем ответ...';
+            feedback.className = 'feedback neutral-feedback';
+            feedback.style.display = 'block';
+
             btn.disabled = true;
             btn.classList.add('disabled-btn');
-            
+
             try {
                 const result = await checkOpenAnswer(
-                    questionText, 
-                    userAnswer, 
+                    questionText,
+                    userAnswer,
                     document.getElementById('subject').value
                 );
-                
+
                 if (result.is_correct) {
                     showFeedback(feedback, `✅ Верно! ${result.feedback}`, true);
                     answerInput.classList.add('correct-answer-input');
@@ -162,49 +254,108 @@ function initTestHandlers() {
                     showFeedback(feedback, `❌ Требуются исправления: ${result.feedback}`, false);
                     answerInput.classList.add('incorrect-answer-input');
                 }
-                
+
                 if (correctAnswerDiv) {
                     correctAnswerDiv.style.display = 'block';
-                    correctAnswerDiv.querySelector('.correct-answer-text').textContent = 
+                    correctAnswerDiv.querySelector('.correct-answer-text').textContent =
                         result.correct_answer;
                     if (window.renderMathInContainer) {
                         window.renderMathInContainer(correctAnswerDiv);
                     }
                 }
+
+                markQuestionResult(questionBlock, Boolean(result.is_correct));
             } catch (error) {
-                console.error("Ошибка:", error);
-                showFeedback(feedback, "⚠️ Ошибка проверки. Попробуйте еще раз.", false);
+                if (error.message === 'Требуется вход') {
+                    return;
+                }
+                console.error('Ошибка:', error);
+                showFeedback(feedback, '⚠️ Ошибка проверки. Попробуйте еще раз.', false);
             } finally {
-                // Всегда разблокируем кнопку для открытых вопросов
                 btn.disabled = false;
                 btn.classList.remove('disabled-btn');
             }
         }
     });
-
-    // Подсветка выбранных вариантов (до проверки)
-    document.querySelectorAll('.option-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const btn = this.closest('.question-block').querySelector('.check-btn');
-            if (btn && !btn.disabled) {
-                const radio = this.querySelector('input[type="radio"]');
-                if (radio) {
-                    radio.checked = true;
-                }
-
-                this.closest('.options-list').querySelectorAll('.option-item').forEach(opt => {
-                    opt.classList.remove('option-selected');
-                });
-                this.classList.add('option-selected');
-            }
-        });
-    });
 }
 
-function showFeedback(element, message, isSuccess) {
-    element.innerHTML = message;
-    element.className = isSuccess ? "feedback correct-feedback" : "feedback incorrect-feedback";
-    element.style.display = "block";
+async function saveTestResult() {
+    const hintEl = document.getElementById('test-save-hint');
+    const button = document.getElementById('save-result-btn');
+
+    if (!currentTestId) {
+        updateSaveHint('Не удалось определить id теста, сохранение недоступно.');
+        return;
+    }
+
+    const totalQuestions = document.querySelectorAll('#test-content .question-block').length;
+    const answered = questionResults.size;
+    const correctCount = [...questionResults.values()].filter(Boolean).length;
+
+    if (totalQuestions === 0) {
+        updateSaveHint('Нет вопросов для сохранения результата.');
+        return;
+    }
+
+    if (answered === 0) {
+        updateSaveHint('Сначала проверьте хотя бы один ответ.');
+        return;
+    }
+
+    const score = Math.round((correctCount / totalQuestions) * 100);
+    const durationSec = testStartedAt ? Math.max(0, Math.round((Date.now() - testStartedAt) / 1000)) : null;
+
+    button.disabled = true;
+
+    try {
+        const response = await fetch('/api/test_attempt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                test_id: currentTestId,
+                score,
+                total_questions: totalQuestions,
+                correct_count: correctCount,
+                duration_sec: durationSec
+            })
+        });
+
+        if (response.status === 401) {
+            window.location.href = '/login?next=/make_test';
+            throw new Error('Требуется вход');
+        }
+
+        if (!response.ok) {
+            let details = 'Не удалось сохранить результат.';
+            try {
+                const payload = await response.json();
+                if (payload && payload.error) {
+                    details = payload.error;
+                }
+            } catch (e) {
+                // Ignore JSON parsing failure and keep generic message.
+            }
+            throw new Error(details);
+        }
+
+        const payload = await response.json();
+        if (payload && payload.ok) {
+            updateSaveHint(`Результат сохранён: ${correctCount}/${totalQuestions} (${score}%).`);
+        } else {
+            throw new Error('Не удалось сохранить результат.');
+        }
+    } catch (error) {
+        if (error.message === 'Требуется вход') {
+            return;
+        }
+        if (hintEl) {
+            hintEl.textContent = `Ошибка сохранения: ${error.message}`;
+        }
+    } finally {
+        button.disabled = false;
+    }
 }
 
 const testLoadingHints = [
@@ -233,26 +384,32 @@ function stopTestLoadingHints() {
     }
 }
 
-// Обработка генерации теста
+initTestHandlers();
+
 document.getElementById('test-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const subject = document.getElementById('subject').value;
     const klass = document.getElementById('class').value;
     const theme = document.getElementById('theme').value;
-    
+
     if (klass < 1 || klass > 11) {
         alert('Класс должен быть от 1 до 11');
         return;
     }
-    
+
     document.getElementById('test-loading').classList.remove('hidden');
     startTestLoadingHints();
     document.getElementById('test-form').classList.add('hidden');
-    
+
     fetch(`/api/test?subject=${encodeURIComponent(subject)}&class=${klass}&theme=${encodeURIComponent(theme)}`)
         .then(response => {
+            if (response.status === 401) {
+                window.location.href = '/login?next=/make_test';
+                throw new Error('Требуется вход');
+            }
             if (!response.ok) throw new Error('Ошибка сервера');
+            currentTestId = response.headers.get('X-Test-Id');
             return response.text();
         })
         .then(html => {
@@ -263,10 +420,14 @@ document.getElementById('test-form').addEventListener('submit', function(e) {
             if (window.renderMathInContainer) {
                 window.renderMathInContainer(document.getElementById('test-content'));
             }
+            initQuestionIndexes();
+            resetTestState(currentTestId);
             document.getElementById('test-result').classList.remove('hidden');
-            initTestHandlers();
         })
         .catch(error => {
+            if (error.message === 'Требуется вход') {
+                return;
+            }
             console.error('Error:', error);
             document.getElementById('test-loading').classList.add('hidden');
             stopTestLoadingHints();
@@ -281,6 +442,5 @@ document.addEventListener('copy', function(e) {
     if (e.target.closest('.answer-input')) return;
     e.preventDefault();
 });
-
 </script>
 {% endblock %}

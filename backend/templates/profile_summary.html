@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Конспект{% endblock %}
+
+{% block content %}
+<section class="page-card glass-card">
+    <div class="summary-header profile-entity-head">
+        <h1 class="page-title-sm no-copy">{{ summary["title"] }}</h1>
+        <p class="profile-item-meta">{{ summary["subject"] }} • {{ summary["klass"] }} класс • {{ summary["theme"] }}</p>
+        <p class="profile-item-meta">Создан: {{ summary["created_at"] }}</p>
+    </div>
+
+    <div id="profileSummaryResult">
+        <article class="summary-article">{{ summary["content_html"] | safe }}</article>
+    </div>
+
+    <div class="result-actions">
+        <a class="back-button" href="{{ url_for('profile', tab='summaries') }}">Назад к конспектам</a>
+    </div>
+</section>
+
+<script>
+    function enhanceSummaryCodeBlocks(container) {
+        if (!container) return;
+        const preBlocks = container.querySelectorAll('pre');
+        preBlocks.forEach(pre => {
+            if (pre.dataset.enhanced === '1') return;
+
+            const codeEl = pre.querySelector('code') || pre;
+            const classText = (codeEl.className || '') + ' ' + (pre.className || '');
+            const langMatch = classText.match(/language-([a-z0-9_-]+)/i);
+            const lang = langMatch ? langMatch[1].toUpperCase() : 'КОД';
+
+            const wrap = document.createElement('div');
+            wrap.className = 'summary-code-wrap';
+
+            const head = document.createElement('div');
+            head.className = 'summary-code-head';
+
+            const langTag = document.createElement('span');
+            langTag.className = 'summary-code-lang no-copy';
+            langTag.textContent = lang;
+
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'summary-copy-btn';
+            copyBtn.textContent = 'Скопировать';
+            copyBtn.addEventListener('click', async () => {
+                const textToCopy = codeEl.textContent || '';
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    copyBtn.textContent = 'Скопировано';
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Скопировать';
+                    }, 1200);
+                } catch (e) {
+                    copyBtn.textContent = 'Ошибка';
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Скопировать';
+                    }, 1200);
+                }
+            });
+
+            head.appendChild(langTag);
+            head.appendChild(copyBtn);
+            pre.parentNode.insertBefore(wrap, pre);
+            wrap.appendChild(head);
+            wrap.appendChild(pre);
+
+            if (window.hljs && codeEl) {
+                window.hljs.highlightElement(codeEl);
+            }
+
+            pre.dataset.enhanced = '1';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('profileSummaryResult');
+        if (window.renderMathInContainer) {
+            window.renderMathInContainer(container);
+        }
+        enhanceSummaryCodeBlocks(container);
+    });
+</script>
+{% endblock %}

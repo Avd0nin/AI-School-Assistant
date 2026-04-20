@@ -133,21 +133,31 @@
 
             // Формируем GET-параметры
             const params = new URLSearchParams(new FormData(this));
+            let summaryId = null;
 
             // Отправляем запрос
             fetch(`/api/summary?${params.toString()}`)
                 .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/login?next=/make_summary';
+                        throw new Error('Требуется вход');
+                    }
                     if (!response.ok) throw new Error('Ошибка сервера');
+                    summaryId = response.headers.get('X-Summary-Id');
                     return response.text();
                 })
                 .then(html => {
                     const cleanHtml = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(html) : html;
+                    const profileAction = summaryId
+                        ? `<a href="/profile/summary/${summaryId}" class="back-button">Открыть в профиле</a>`
+                        : '';
                     document.getElementById('result').innerHTML = `
                         <article class="summary-article">${cleanHtml}</article>
                         <div class="result-actions">
                             <button class="back-button" onclick="goBack()">
                                 Назад
                             </button>
+                            ${profileAction}
                         </div>
                     `;
                     document.getElementById('result').classList.remove('hidden');
@@ -157,6 +167,9 @@
                     enhanceSummaryCodeBlocks(document.getElementById('result'));
                 })
                 .catch(error => {
+                    if (error.message === 'Требуется вход') {
+                        return;
+                    }
                     console.error('Ошибка:', error);
                     document.getElementById('result').innerHTML = `
                         <p class="error-text">Ошибка: ${error.message}</p>

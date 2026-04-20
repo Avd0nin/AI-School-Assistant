@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Сохранённый тест{% endblock %}
+
+{% block content %}
+<section class="page-card glass-card container">
+    <div class="profile-entity-head">
+        <h1 class="page-title-sm no-copy">{{ test["subject"] }} • {{ test["theme"] }}</h1>
+        <p class="profile-item-meta">{{ test["klass"] }} класс • Создан: {{ test["created_at"] }}</p>
+    </div>
+
+    <div id="profileTestContent">{{ test["generated_html"] | safe }}</div>
+
+    <section class="profile-attempts">
+        <h2 class="page-title-sm no-copy">История попыток</h2>
+        {% if attempts %}
+            <div class="profile-list">
+                {% for attempt in attempts %}
+                    <article class="profile-item">
+                        <h3 class="profile-item-title">{{ attempt["correct_count"] }}/{{ attempt["total_questions"] }} ({{ attempt["score"] }}%)</h3>
+                        <p class="profile-item-meta">
+                            {% if attempt["duration_sec"] %}Время: {{ attempt["duration_sec"] }} сек • {% endif %}{{ attempt["created_at"] }}
+                        </p>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="profile-empty">По этому тесту пока нет сохранённых попыток.</p>
+        {% endif %}
+    </section>
+
+    <div class="result-actions">
+        <a class="back-button" href="{{ url_for('profile', tab='tests') }}">Назад к тестам</a>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const testContainer = document.getElementById('profileTestContent');
+        if (window.renderMathInContainer) {
+            window.renderMathInContainer(testContainer);
+        }
+    });
+
+    document.addEventListener('copy', function(e) {
+        const testContent = document.getElementById('profileTestContent');
+        if (!testContent || !testContent.contains(e.target)) return;
+        if (e.target.closest('.answer-input')) return;
+        e.preventDefault();
+    });
+</script>
+{% endblock %}
