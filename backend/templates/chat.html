@@ -170,14 +170,17 @@
 
             convertCodeFencesToHtml(rawText) {
                 if (!rawText) return '';
-                return rawText.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
-                    const safeLang = (lang || '').toLowerCase().trim();
+                return rawText.replace(/```([a-zA-Z0-9_+#.-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+                    const safeLang = window.normalizeCodeLanguage
+                        ? window.normalizeCodeLanguage(lang)
+                        : (lang || '').toLowerCase().trim();
                     const langClass = safeLang ? `language-${safeLang}` : '';
+                    const langData = safeLang ? ` data-lang="${safeLang}"` : '';
                     const escapedCode = String(code)
                         .replace(/&/g, '&amp;')
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;');
-                    return `<pre><code class="${langClass}">${escapedCode}</code></pre>`;
+                    return `<pre><code class="${langClass}"${langData}>${escapedCode}</code></pre>`;
                 });
             }
 
@@ -188,9 +191,12 @@
                     if (pre.dataset.enhanced === '1') return;
 
                     const codeEl = pre.querySelector('code') || pre;
-                    const classText = (codeEl.className || '') + ' ' + (pre.className || '');
-                    const langMatch = classText.match(/language-([a-z0-9_-]+)/i);
-                    const lang = langMatch ? langMatch[1].toUpperCase() : 'КОД';
+                    const declaredLanguage = window.extractCodeLanguage
+                        ? window.extractCodeLanguage(codeEl, pre)
+                        : '';
+                    let languageLabel = window.getCodeLanguageLabel
+                        ? window.getCodeLanguageLabel(declaredLanguage)
+                        : (declaredLanguage ? declaredLanguage.toUpperCase() : 'Код');
 
                     const wrap = document.createElement('div');
                     wrap.className = 'summary-code-wrap';
@@ -200,7 +206,7 @@
 
                     const langTag = document.createElement('span');
                     langTag.className = 'summary-code-lang no-copy';
-                    langTag.textContent = lang;
+                    langTag.textContent = languageLabel;
 
                     const copyBtn = document.createElement('button');
                     copyBtn.type = 'button';
@@ -228,7 +234,11 @@
                     wrap.appendChild(head);
                     wrap.appendChild(pre);
 
-                    if (window.hljs && codeEl) {
+                    if (window.highlightCodeElement) {
+                        const result = window.highlightCodeElement(codeEl, pre, declaredLanguage);
+                        languageLabel = result && result.label ? result.label : languageLabel;
+                        langTag.textContent = languageLabel;
+                    } else if (window.hljs && codeEl) {
                         window.hljs.highlightElement(codeEl);
                     }
 

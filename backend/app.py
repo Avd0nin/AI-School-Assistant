@@ -1,9 +1,11 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for
 from ai_core import AICore
+from contest_routes import create_contest_blueprint
 
 
 model = AICore()
 app = Flask(__name__)
+app.register_blueprint(create_contest_blueprint(model))
 
 
 @app.route('/')
@@ -28,7 +30,14 @@ def chat():
 
 @app.route('/make_test', methods=['GET'])
 def make_test():
-    return render_template('generate_test.html')
+    mode = str(request.args.get('mode', 'test')).strip().lower()
+    initial_mode = 'contest' if mode == 'contest' else 'test'
+    return render_template('generate_test.html', initial_mode=initial_mode)
+
+
+@app.route('/make_contest', methods=['GET'])
+def make_contest():
+    return redirect(url_for('make_test', mode='contest'))
 
 
 @app.route('/api/question', methods=['POST'])

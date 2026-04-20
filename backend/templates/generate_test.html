@@ -1,44 +1,237 @@
 {% extends "base.html" %}
 
-{% block title %}Генератор тестов{% endblock %}
+{% block title %}Генератор тестов и контестов{% endblock %}
 
 {% block content %}
-<section class="page-card glass-card container">
-    <h1 class="page-title no-copy">Создать тест</h1>
-    
-    <form id="test-form" autocomplete="off">
-        <div class="form-group">
-            <label for="subject">Предмет:</label>
-            <input type="text" id="subject" name="subject" required placeholder="Например: Математика" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+<section class="page-card glass-card container practice-generator-page">
+    <h1 class="page-title no-copy">Тесты и контесты</h1>
+
+    <div class="generator-mode-switch" id="generatorModeSwitch">
+        <button type="button" class="generator-mode-btn is-active" data-mode="test">Тесты</button>
+        <button type="button" class="generator-mode-btn" data-mode="contest">Контесты</button>
+    </div>
+
+    <div id="testPanel" class="generator-panel is-visible">
+        <form id="test-form" autocomplete="off">
+            <div class="form-group">
+                <label for="subject">Предмет:</label>
+                <input type="text" id="subject" name="subject" required placeholder="Например: Математика" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            </div>
+
+            <div class="form-group">
+                <label for="class">Класс:</label>
+                <input type="number" id="class" name="class" min="1" max="11" required placeholder="От 1 до 11">
+            </div>
+
+            <div class="form-group">
+                <label for="theme">Тема:</label>
+                <input type="text" id="theme" name="theme" required placeholder="Например: Дроби" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            </div>
+
+            <button type="submit" class="submit-btn">Сгенерировать тест</button>
+        </form>
+
+        <div id="test-loading" class="hidden test-loading-wrap">
+            <div class="spinner"></div>
+            <div class="loading-hint-strip">
+                <div class="loading-hint no-copy" id="testLoadingHint"></div>
+            </div>
         </div>
-        
-        <div class="form-group">
-            <label for="class">Класс:</label>
-            <input type="number" id="class" name="class" min="1" max="11" required placeholder="От 1 до 11">
-        </div>
-        
-        <div class="form-group">
-            <label for="theme">Тема:</label>
-            <input type="text" id="theme" name="theme" required placeholder="Например: Дроби" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-        </div>
-        
-        <button type="submit" class="submit-btn">Сгенерировать тест</button>
-    </form>
-    
-    <div id="test-loading" class="hidden test-loading-wrap">
-        <div class="spinner"></div>
-        <div class="loading-hint-strip">
-            <div class="loading-hint no-copy" id="testLoadingHint"></div>
+
+        <div id="test-result" class="hidden">
+            <button type="button" id="newTestBtn" class="back-button">Создать новый тест</button>
+            <div id="test-content"></div>
         </div>
     </div>
-    
-    <div id="test-result" class="hidden">
-        <button onclick="window.location.reload()" class="back-button">Создать новый тест</button>
-        <div id="test-content"></div>
+
+    <div id="contestPanel" class="generator-panel">
+        <form id="contest-form" autocomplete="off">
+            <div class="form-group">
+                <label for="contestDescription">Описание тем и пожеланий:</label>
+                <textarea id="contestDescription" name="description" rows="4" placeholder="Например: графы + динамика, акцент на BFS/DFS и рюкзак, без слишком длинной математики" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+            </div>
+
+            <div class="contest-form-grid">
+                <div class="form-group">
+                    <label for="contestDifficulty">Сложность (1–10):</label>
+                    <div class="range-control">
+                        <div class="range-head">
+                            <span>Уровень</span>
+                            <strong id="contestDifficultyValue">5 — средний</strong>
+                        </div>
+                        <input type="range" id="contestDifficulty" name="difficulty" min="1" max="10" step="1" value="5" class="custom-range">
+                        <div class="range-hints">
+                            <span>1 — легко</span>
+                            <span>10 — олимпиадно</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="contestTasksCount">Количество задач (1–10):</label>
+                    <div class="range-control">
+                        <div class="range-head">
+                            <span>Задачи</span>
+                            <strong id="contestTasksCountValue">4</strong>
+                        </div>
+                        <input type="range" id="contestTasksCount" name="tasks_count" min="1" max="10" step="1" value="4" class="custom-range">
+                        <div class="range-hints">
+                            <span>Минимум: 1</span>
+                            <span>Максимум: 10</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contest-form-grid contest-form-grid-extra">
+                <div class="form-group">
+                    <label for="contestDuration">Длительность контеста (мин):</label>
+                    <div class="range-control">
+                        <div class="range-head">
+                            <span>Таймер</span>
+                            <strong id="contestDurationValue">60 мин</strong>
+                        </div>
+                        <input type="range" id="contestDuration" name="duration_minutes" min="15" max="180" step="5" value="60" class="custom-range">
+                        <div class="range-hints">
+                            <span>15 мин</span>
+                            <span>180 мин</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="contest-checkbox">
+                        <input type="checkbox" id="contestShowDetailedResults">
+                        <span class="contest-checkbox-ui" aria-hidden="true">
+                            <span class="contest-checkbox-dot"></span>
+                        </span>
+                        <span class="contest-checkbox-text">Показывать подробные результаты тестов</span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Сгенерировать контест</button>
+        </form>
+
+        <div id="contest-loading" class="hidden test-loading-wrap">
+            <div class="spinner"></div>
+            <div class="loading-hint-strip">
+                <div class="loading-hint no-copy" id="contestLoadingHint"></div>
+            </div>
+        </div>
+
+        <div id="contest-result" class="hidden contest-result-wrap">
+            <div class="result-actions">
+                <button type="button" class="back-button" id="newContestBtn">Создать новый контест</button>
+            </div>
+            <div id="contestSessionBar" class="contest-session-bar hidden"></div>
+            <div id="contestFinishSummary" class="contest-finish-summary hidden"></div>
+            <div class="contest-tasks" id="contestTasks"></div>
+        </div>
     </div>
 </section>
 
 <script>
+const initialGeneratorMode = '{{ initial_mode or "test" }}' === 'contest' ? 'contest' : 'test';
+
+const generatorModeButtons = [...document.querySelectorAll('.generator-mode-btn')];
+const generatorModeSwitch = document.getElementById('generatorModeSwitch');
+const testPanel = document.getElementById('testPanel');
+const contestPanel = document.getElementById('contestPanel');
+let generatorModeSwitchTimer = null;
+
+function setGeneratorMode(mode, pushState = true) {
+    const nextMode = mode === 'contest' ? 'contest' : 'test';
+    const currentMode = generatorModeSwitch.dataset.mode || '';
+    if (currentMode === nextMode) {
+        if (pushState) {
+            const nextUrl = new URL(window.location.href);
+            if (nextMode === 'contest') {
+                nextUrl.searchParams.set('mode', 'contest');
+            } else {
+                nextUrl.searchParams.delete('mode');
+            }
+            window.history.replaceState({}, '', nextUrl);
+        }
+        return;
+    }
+
+    generatorModeSwitch.classList.add('is-switching');
+    if (generatorModeSwitchTimer) {
+        clearTimeout(generatorModeSwitchTimer);
+    }
+    generatorModeSwitchTimer = setTimeout(() => {
+        generatorModeSwitch.classList.remove('is-switching');
+    }, 260);
+
+    generatorModeSwitch.dataset.mode = nextMode;
+    generatorModeButtons.forEach(button => {
+        button.classList.toggle('is-active', button.dataset.mode === nextMode);
+    });
+    testPanel.classList.toggle('is-visible', nextMode === 'test');
+    contestPanel.classList.toggle('is-visible', nextMode === 'contest');
+    testPanel.setAttribute('aria-hidden', String(nextMode !== 'test'));
+    contestPanel.setAttribute('aria-hidden', String(nextMode !== 'contest'));
+
+    if (pushState) {
+        const nextUrl = new URL(window.location.href);
+        if (nextMode === 'contest') {
+            nextUrl.searchParams.set('mode', 'contest');
+        } else {
+            nextUrl.searchParams.delete('mode');
+        }
+        window.history.replaceState({}, '', nextUrl);
+    }
+}
+
+generatorModeButtons.forEach(button => {
+    button.addEventListener('click', () => setGeneratorMode(button.dataset.mode));
+});
+
+setGeneratorMode(initialGeneratorMode, false);
+
+const difficultyRange = document.getElementById('contestDifficulty');
+const difficultyValueLabel = document.getElementById('contestDifficultyValue');
+const tasksCountRange = document.getElementById('contestTasksCount');
+const tasksCountValueLabel = document.getElementById('contestTasksCountValue');
+const contestDurationRange = document.getElementById('contestDuration');
+const contestDurationValueLabel = document.getElementById('contestDurationValue');
+
+const difficultyLabelMap = {
+    1: 'очень легкий',
+    2: 'легкий',
+    3: 'ниже среднего',
+    4: 'средний',
+    5: 'средний+',
+    6: 'выше среднего',
+    7: 'сложный',
+    8: 'очень сложный',
+    9: 'предолимпиадный',
+    10: 'олимпиадный'
+};
+
+function paintRangeFill(rangeElement) {
+    if (!rangeElement) return;
+    const min = Number(rangeElement.min || 0);
+    const max = Number(rangeElement.max || 100);
+    const value = Number(rangeElement.value || min);
+    const percent = ((value - min) / (max - min)) * 100;
+    rangeElement.style.setProperty('--range-fill', `${Math.max(0, Math.min(100, percent))}%`);
+}
+
+function updateContestRangeLabels() {
+    const difficulty = Number(difficultyRange.value || 5);
+    difficultyValueLabel.textContent = `${difficulty} — ${difficultyLabelMap[difficulty] || 'средний'}`;
+    tasksCountValueLabel.textContent = String(Number(tasksCountRange.value || 4));
+    contestDurationValueLabel.textContent = `${Number(contestDurationRange.value || 60)} мин`;
+    paintRangeFill(difficultyRange);
+    paintRangeFill(tasksCountRange);
+    paintRangeFill(contestDurationRange);
+}
+
+difficultyRange.addEventListener('input', updateContestRangeLabels);
+tasksCountRange.addEventListener('input', updateContestRangeLabels);
+contestDurationRange.addEventListener('input', updateContestRangeLabels);
+updateContestRangeLabels();
+
 async function checkOpenAnswer(questionText, userAnswer, subject) {
     try {
         const response = await fetch('/api/check_answer', {
@@ -52,52 +245,57 @@ async function checkOpenAnswer(questionText, userAnswer, subject) {
                 subject: subject
             })
         });
-        
+
         if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
         return await response.json();
     } catch (error) {
-        console.error("Ошибка проверки:", error);
+        console.error('Ошибка проверки:', error);
         return {
             is_correct: false,
-            feedback: "Ошибка проверки. Пожалуйста, сверьтесь с учебником.",
-            correct_answer: "Информация недоступна"
+            feedback: 'Ошибка проверки. Пожалуйста, сверьтесь с учебником.',
+            correct_answer: 'Информация недоступна'
         };
     }
 }
 
+let testHandlersInitialized = false;
+
 function initTestHandlers() {
-    // Обработка нажатия на кнопки проверки
+    if (testHandlersInitialized) return;
+    testHandlersInitialized = true;
+
     document.addEventListener('click', async function(e) {
         if (!e.target.classList.contains('check-btn')) return;
-        
+
         const btn = e.target;
         const questionBlock = btn.closest('.question-block');
+        if (!questionBlock) return;
+
         const feedback = questionBlock.querySelector('.feedback');
         const correctAnswerDiv = questionBlock.querySelector('.correct-answer');
-        
-        // Для вопросов с вариантами
+
         if (questionBlock.querySelector('.options-list')) {
             if (btn.disabled) return;
-            
+
             btn.disabled = true;
             btn.classList.add('disabled-btn');
-            
+
             const selected = questionBlock.querySelector('input[type="radio"]:checked');
-            
+
             if (!selected) {
-                showFeedback(feedback, "Пожалуйста, выберите ответ", false);
+                showFeedback(feedback, 'Пожалуйста, выберите ответ', false);
                 btn.disabled = false;
                 btn.classList.remove('disabled-btn');
                 return;
             }
-            
-            const isCorrect = selected.value === "correct";
-            showFeedback(feedback, 
-                isCorrect ? "✅ Верно! Отличный ответ!" : "❌ Неверно. Правильный ответ выделен зеленым.",
+
+            const isCorrect = selected.value === 'correct';
+            showFeedback(
+                feedback,
+                isCorrect ? '✅ Верно! Отличный ответ!' : '❌ Неверно. Правильный ответ выделен зеленым.',
                 isCorrect
             );
-            
-            // Подсветка ответов и отключение выбора
+
             const optionsList = questionBlock.querySelector('.options-list');
             optionsList.querySelectorAll('.option-item').forEach(item => {
                 item.classList.remove('correct-answer', 'incorrect-answer');
@@ -108,53 +306,48 @@ function initTestHandlers() {
                 item.onmouseover = null;
                 item.onmouseout = null;
             });
-            
+
             if (!isCorrect) {
                 selected.closest('.option-item').classList.add('incorrect-answer');
             }
-            
+
             const correct = questionBlock.querySelector('input[value="correct"]');
             if (correct) {
                 correct.closest('.option-item').classList.add('correct-answer');
-                
+
                 if (correctAnswerDiv) {
                     correctAnswerDiv.style.display = 'block';
-                    correctAnswerDiv.querySelector('.correct-answer-text').textContent = 
-                        correct.nextElementSibling.textContent.trim();
+                    correctAnswerDiv.querySelector('.correct-answer-text').textContent = correct.nextElementSibling.textContent.trim();
                     if (window.renderMathInContainer) {
                         window.renderMathInContainer(correctAnswerDiv);
                     }
                 }
             }
-        } 
-        // Для открытых вопросов
-        else if (questionBlock.querySelector('.answer-input')) {
+        } else if (questionBlock.querySelector('.answer-input')) {
             const answerInput = questionBlock.querySelector('.answer-input');
             const questionText = questionBlock.querySelector('.question-text').textContent;
             const userAnswer = answerInput.value.trim();
-            
+
             if (!userAnswer) {
-                showFeedback(feedback, "Пожалуйста, введите ваш ответ", false);
+                showFeedback(feedback, 'Пожалуйста, введите ваш ответ', false);
                 return;
             }
-            
-            // Сбрасываем предыдущие стили
+
             answerInput.classList.remove('correct-answer-input', 'incorrect-answer-input');
-            feedback.textContent = "⌛ Проверяем ответ...";
-            feedback.className = "feedback neutral-feedback";
-            feedback.style.display = "block";
-            
-            // Блокируем кнопку только на время проверки
+            feedback.textContent = '⌛ Проверяем ответ...';
+            feedback.className = 'feedback neutral-feedback';
+            feedback.style.display = 'block';
+
             btn.disabled = true;
             btn.classList.add('disabled-btn');
-            
+
             try {
                 const result = await checkOpenAnswer(
-                    questionText, 
-                    userAnswer, 
+                    questionText,
+                    userAnswer,
                     document.getElementById('subject').value
                 );
-                
+
                 if (result.is_correct) {
                     showFeedback(feedback, `✅ Верно! ${result.feedback}`, true);
                     answerInput.classList.add('correct-answer-input');
@@ -162,28 +355,27 @@ function initTestHandlers() {
                     showFeedback(feedback, `❌ Требуются исправления: ${result.feedback}`, false);
                     answerInput.classList.add('incorrect-answer-input');
                 }
-                
+
                 if (correctAnswerDiv) {
                     correctAnswerDiv.style.display = 'block';
-                    correctAnswerDiv.querySelector('.correct-answer-text').textContent = 
-                        result.correct_answer;
+                    correctAnswerDiv.querySelector('.correct-answer-text').textContent = result.correct_answer;
                     if (window.renderMathInContainer) {
                         window.renderMathInContainer(correctAnswerDiv);
                     }
                 }
             } catch (error) {
-                console.error("Ошибка:", error);
-                showFeedback(feedback, "⚠️ Ошибка проверки. Попробуйте еще раз.", false);
+                console.error('Ошибка:', error);
+                showFeedback(feedback, '⚠️ Ошибка проверки. Попробуйте еще раз.', false);
             } finally {
-                // Всегда разблокируем кнопку для открытых вопросов
                 btn.disabled = false;
                 btn.classList.remove('disabled-btn');
             }
         }
     });
+}
 
-    // Подсветка выбранных вариантов (до проверки)
-    document.querySelectorAll('.option-item').forEach(item => {
+function bindOptionSelectionHandlers(scope) {
+    scope.querySelectorAll('.option-item').forEach(item => {
         item.addEventListener('click', function() {
             const btn = this.closest('.question-block').querySelector('.check-btn');
             if (btn && !btn.disabled) {
@@ -203,8 +395,8 @@ function initTestHandlers() {
 
 function showFeedback(element, message, isSuccess) {
     element.innerHTML = message;
-    element.className = isSuccess ? "feedback correct-feedback" : "feedback incorrect-feedback";
-    element.style.display = "block";
+    element.className = isSuccess ? 'feedback correct-feedback' : 'feedback incorrect-feedback';
+    element.style.display = 'block';
 }
 
 const testLoadingHints = [
@@ -227,29 +419,27 @@ function startTestLoadingHints() {
 }
 
 function stopTestLoadingHints() {
-    if (testLoadingHintTimer) {
-        clearInterval(testLoadingHintTimer);
-        testLoadingHintTimer = null;
-    }
+    if (!testLoadingHintTimer) return;
+    clearInterval(testLoadingHintTimer);
+    testLoadingHintTimer = null;
 }
 
-// Обработка генерации теста
 document.getElementById('test-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const subject = document.getElementById('subject').value;
     const klass = document.getElementById('class').value;
     const theme = document.getElementById('theme').value;
-    
+
     if (klass < 1 || klass > 11) {
         alert('Класс должен быть от 1 до 11');
         return;
     }
-    
+
     document.getElementById('test-loading').classList.remove('hidden');
     startTestLoadingHints();
     document.getElementById('test-form').classList.add('hidden');
-    
+
     fetch(`/api/test?subject=${encodeURIComponent(subject)}&class=${klass}&theme=${encodeURIComponent(theme)}`)
         .then(response => {
             if (!response.ok) throw new Error('Ошибка сервера');
@@ -259,10 +449,12 @@ document.getElementById('test-form').addEventListener('submit', function(e) {
             document.getElementById('test-loading').classList.add('hidden');
             stopTestLoadingHints();
             const normalizedHtml = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(html) : html;
-            document.getElementById('test-content').innerHTML = normalizedHtml;
+            const testContent = document.getElementById('test-content');
+            testContent.innerHTML = normalizedHtml;
             if (window.renderMathInContainer) {
-                window.renderMathInContainer(document.getElementById('test-content'));
+                window.renderMathInContainer(testContent);
             }
+            bindOptionSelectionHandlers(testContent);
             document.getElementById('test-result').classList.remove('hidden');
             initTestHandlers();
         })
@@ -275,6 +467,14 @@ document.getElementById('test-form').addEventListener('submit', function(e) {
         });
 });
 
+document.getElementById('newTestBtn').addEventListener('click', () => {
+    document.getElementById('test-result').classList.add('hidden');
+    document.getElementById('test-content').innerHTML = '';
+    document.getElementById('test-form').classList.remove('hidden');
+    document.getElementById('test-form').reset();
+    document.getElementById('subject').focus();
+});
+
 document.addEventListener('copy', function(e) {
     const testContent = document.getElementById('test-content');
     if (!testContent || !testContent.contains(e.target)) return;
@@ -282,5 +482,929 @@ document.addEventListener('copy', function(e) {
     e.preventDefault();
 });
 
+const contestLoadingHints = [
+    'Подбираем задачи и балансируем сложность раунда…',
+    'Готовим примеры и качественные тесты к каждой задаче…',
+    'Почти готово: формируем контест в олимпиадном формате…',
+    'После генерации можно сразу прогнать Python/C++ решения на тестах.'
+];
+let contestLoadingHintTimer = null;
+let currentContest = null;
+
+function startContestLoadingHints() {
+    const hintEl = document.getElementById('contestLoadingHint');
+    if (!hintEl) return;
+    const showRandomHint = () => {
+        hintEl.textContent = contestLoadingHints[Math.floor(Math.random() * contestLoadingHints.length)];
+    };
+    showRandomHint();
+    contestLoadingHintTimer = setInterval(showRandomHint, 2800);
+}
+
+function stopContestLoadingHints() {
+    if (!contestLoadingHintTimer) return;
+    clearInterval(contestLoadingHintTimer);
+    contestLoadingHintTimer = null;
+}
+
+function sanitizeHtml(rawHtml) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawHtml || '', 'text/html');
+    const blockedTags = ['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta'];
+    blockedTags.forEach(tag => doc.querySelectorAll(tag).forEach(el => el.remove()));
+
+    doc.querySelectorAll('*').forEach(el => {
+        [...el.attributes].forEach(attr => {
+            const name = attr.name.toLowerCase();
+            const value = (attr.value || '').toLowerCase();
+            if (name.startsWith('on') || name === 'style' || value.includes('javascript:')) {
+                el.removeAttribute(attr.name);
+            }
+        });
+    });
+    return doc.body.innerHTML;
+}
+
+function convertCodeFencesToHtml(rawText) {
+    if (!rawText) return '';
+    return rawText.replace(/```([a-zA-Z0-9_+#.-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+        const safeLang = window.normalizeCodeLanguage
+            ? window.normalizeCodeLanguage(lang)
+            : (lang || '').toLowerCase().trim();
+        const langClass = safeLang ? `language-${safeLang}` : '';
+        const langData = safeLang ? ` data-lang="${safeLang}"` : '';
+        const escapedCode = String(code)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        return `<pre><code class="${langClass}"${langData}>${escapedCode}</code></pre>`;
+    });
+}
+
+function enhanceCodeBlocks(container) {
+    if (!container) return;
+    container.querySelectorAll('pre').forEach(pre => {
+        if (pre.dataset.enhanced === '1') return;
+
+        const codeEl = pre.querySelector('code') || pre;
+        const declaredLanguage = window.extractCodeLanguage
+            ? window.extractCodeLanguage(codeEl, pre)
+            : '';
+        let languageLabel = window.getCodeLanguageLabel
+            ? window.getCodeLanguageLabel(declaredLanguage)
+            : (declaredLanguage ? declaredLanguage.toUpperCase() : 'Код');
+
+        const wrap = document.createElement('div');
+        wrap.className = 'summary-code-wrap';
+
+        const head = document.createElement('div');
+        head.className = 'summary-code-head';
+
+        const langTag = document.createElement('span');
+        langTag.className = 'summary-code-lang no-copy';
+        langTag.textContent = languageLabel;
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'summary-copy-btn';
+        copyBtn.textContent = 'Скопировать';
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(codeEl.textContent || '');
+                copyBtn.textContent = 'Скопировано';
+            } catch (e) {
+                copyBtn.textContent = 'Ошибка';
+            }
+            setTimeout(() => {
+                copyBtn.textContent = 'Скопировать';
+            }, 1200);
+        });
+
+        head.appendChild(langTag);
+        head.appendChild(copyBtn);
+        pre.parentNode.insertBefore(wrap, pre);
+        wrap.appendChild(head);
+        wrap.appendChild(pre);
+
+        if (window.highlightCodeElement) {
+            const result = window.highlightCodeElement(codeEl, pre, declaredLanguage);
+            languageLabel = result && result.label ? result.label : languageLabel;
+            langTag.textContent = languageLabel;
+        } else if (window.hljs && codeEl) {
+            window.hljs.highlightElement(codeEl);
+        }
+
+        pre.dataset.enhanced = '1';
+    });
+}
+
+function createSpecItem(label, value) {
+    const item = document.createElement('div');
+    item.className = 'contest-spec-item';
+    item.innerHTML = `<strong>${label}:</strong> <span></span>`;
+    item.querySelector('span').textContent = value || '—';
+    return item;
+}
+
+let contestTaskStates = [];
+let contestDurationSeconds = 0;
+let contestStartedAt = 0;
+let contestTimerInterval = null;
+let contestFinished = false;
+let activeContestTaskIndex = 0;
+let contestShowDetailedResults = false;
+const contestEditors = new Map();
+let contestThemeObserverReady = false;
+const contestCodeTemplates = {
+    cpp: [
+        '#include <bits/stdc++.h>',
+        'using namespace std;',
+        '',
+        'int main() {',
+        '    ios::sync_with_stdio(false);',
+        '    cin.tie(nullptr);',
+        '',
+        '    return 0;',
+        '}'
+    ].join('\n')
+};
+
+function getContestEditorTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'eclipse' : 'material-darker';
+}
+
+function getContestEditorMode(language) {
+    return language === 'cpp' ? 'text/x-c++src' : 'python';
+}
+
+function applyContestEditorsTheme() {
+    const theme = getContestEditorTheme();
+    contestEditors.forEach((entry) => {
+        if (entry && entry.editor && typeof entry.editor.setOption === 'function') {
+            entry.editor.setOption('theme', theme);
+        }
+    });
+}
+
+function ensureContestThemeObserver() {
+    if (contestThemeObserverReady) return;
+    contestThemeObserverReady = true;
+    const observer = new MutationObserver(() => {
+        applyContestEditorsTheme();
+    });
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+    });
+}
+
+function setContestEditorMode(taskIndex, language) {
+    const entry = contestEditors.get(taskIndex);
+    if (!entry || !entry.editor) return;
+    entry.editor.setOption('mode', getContestEditorMode(language));
+}
+
+function refreshContestEditor(taskIndex) {
+    const entry = contestEditors.get(taskIndex);
+    if (!entry || !entry.editor || typeof entry.editor.refresh !== 'function') return;
+    requestAnimationFrame(() => entry.editor.refresh());
+}
+
+function setContestEditorsReadOnly(readOnly) {
+    contestEditors.forEach((entry) => {
+        if (!entry || !entry.editor) return;
+        entry.editor.setOption('readOnly', readOnly ? 'nocursor' : false);
+    });
+}
+
+function clearContestEditors() {
+    contestEditors.forEach((entry) => {
+        if (!entry) return;
+        if (entry.cleanup && Array.isArray(entry.cleanup)) {
+            entry.cleanup.forEach((dispose) => {
+                if (typeof dispose === 'function') dispose();
+            });
+        }
+        if (entry.editor && typeof entry.editor.toTextArea === 'function') {
+            entry.editor.toTextArea();
+        }
+        if (entry.select && entry.onLanguageChange) {
+            entry.select.removeEventListener('change', entry.onLanguageChange);
+        }
+    });
+    contestEditors.clear();
+}
+
+function initContestEditor(runner, taskIndex) {
+    const codeInput = runner.querySelector('.contest-code-input');
+    const languageSelect = runner.querySelector('.contest-language-select');
+    const outputWrap = runner.querySelector('.contest-run-output');
+    const languageDropdown = runner.querySelector('[data-language-dropdown]');
+    const languageTrigger = runner.querySelector('[data-language-trigger]');
+    const languageCurrent = runner.querySelector('[data-language-current]');
+    const languageMenu = runner.querySelector('[data-language-menu]');
+    const languageItems = [...runner.querySelectorAll('[data-language-value]')];
+    if (!codeInput || !languageSelect) return;
+
+    if (!window.CodeMirror || typeof window.CodeMirror.fromTextArea !== 'function') {
+        return;
+    }
+
+    ensureContestThemeObserver();
+
+    const editor = window.CodeMirror.fromTextArea(codeInput, {
+        mode: getContestEditorMode(languageSelect.value || 'python'),
+        theme: getContestEditorTheme(),
+        lineNumbers: true,
+        lineWrapping: false,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: false,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        electricChars: false,
+        viewportMargin: Infinity,
+        extraKeys: {
+            Tab: (cm) => {
+                if (cm.somethingSelected()) {
+                    cm.indentSelection('add');
+                } else {
+                    cm.replaceSelection('    ', 'end', '+input');
+                }
+            },
+            'Shift-Tab': (cm) => cm.indentSelection('subtract')
+        }
+    });
+
+    const wrapper = editor.getWrapperElement();
+    if (wrapper) {
+        wrapper.classList.add('contest-cm-editor');
+    }
+
+    contestEditors.set(taskIndex, {
+        editor,
+        select: languageSelect,
+        onLanguageChange: null,
+        currentLanguage: languageSelect.value === 'cpp' ? 'cpp' : 'python',
+        drafts: { python: '', cpp: '' },
+        cleanup: []
+    });
+
+    const entry = contestEditors.get(taskIndex);
+    entry.drafts.python = editor.getValue();
+
+    const addCleanupListener = (target, eventName, listener, options) => {
+        if (!target || typeof target.addEventListener !== 'function') return;
+        target.addEventListener(eventName, listener, options);
+        entry.cleanup.push(() => target.removeEventListener(eventName, listener, options));
+    };
+
+    const closeLanguageDropdown = () => {
+        if (languageDropdown) languageDropdown.classList.remove('is-open');
+        if (languageTrigger) languageTrigger.setAttribute('aria-expanded', 'false');
+    };
+
+    const updateLanguageUi = (language) => {
+        const safeLanguage = language === 'cpp' ? 'cpp' : 'python';
+        if (languageCurrent) {
+            languageCurrent.textContent = safeLanguage === 'cpp' ? 'C++' : 'Python';
+        }
+        languageItems.forEach((item) => {
+            const isSelected = item.dataset.languageValue === safeLanguage;
+            item.classList.toggle('is-selected', isSelected);
+            item.setAttribute('aria-selected', String(isSelected));
+        });
+        closeLanguageDropdown();
+    };
+
+    const setEditorLanguage = (nextLanguage) => {
+        const safeLanguage = nextLanguage === 'cpp' ? 'cpp' : 'python';
+        const previousLanguage = entry.currentLanguage;
+
+        entry.drafts[previousLanguage] = editor.getValue();
+
+        let nextCode = '';
+        if (safeLanguage === 'cpp') {
+            const hasCppDraft = (entry.drafts.cpp || '').trim().length > 0;
+            if (!hasCppDraft) {
+                nextCode = contestCodeTemplates.cpp;
+            } else {
+                nextCode = entry.drafts.cpp;
+            }
+        } else {
+            nextCode = entry.drafts.python || '';
+        }
+
+        editor.setValue(nextCode);
+        editor.clearHistory();
+        setContestEditorMode(taskIndex, safeLanguage);
+        languageSelect.value = safeLanguage;
+        entry.currentLanguage = safeLanguage;
+        entry.drafts[safeLanguage] = nextCode;
+        updateLanguageUi(safeLanguage);
+
+        if (outputWrap) {
+            outputWrap.innerHTML = '';
+        }
+        editor.focus();
+        refreshContestEditor(taskIndex);
+    };
+
+    const onLanguageChange = () => {
+        setEditorLanguage(languageSelect.value === 'cpp' ? 'cpp' : 'python');
+    };
+    languageSelect.addEventListener('change', onLanguageChange);
+    entry.onLanguageChange = onLanguageChange;
+
+    if (languageDropdown && languageTrigger && languageMenu && languageItems.length) {
+        addCleanupListener(languageTrigger, 'click', (event) => {
+            event.preventDefault();
+            if (languageTrigger.disabled) return;
+            const willOpen = !languageDropdown.classList.contains('is-open');
+            languageDropdown.classList.toggle('is-open', willOpen);
+            languageTrigger.setAttribute('aria-expanded', String(willOpen));
+        });
+
+        languageItems.forEach((item) => {
+            addCleanupListener(item, 'click', (event) => {
+                event.preventDefault();
+                if (languageTrigger.disabled) return;
+                const nextLanguage = item.dataset.languageValue === 'cpp' ? 'cpp' : 'python';
+                if (languageSelect.value === nextLanguage) {
+                    closeLanguageDropdown();
+                    return;
+                }
+                languageSelect.value = nextLanguage;
+                onLanguageChange();
+            });
+        });
+
+        addCleanupListener(document, 'click', (event) => {
+            if (!languageDropdown.contains(event.target)) {
+                closeLanguageDropdown();
+            }
+        });
+
+        addCleanupListener(document, 'keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeLanguageDropdown();
+            }
+        });
+    }
+
+    if (contestFinished) {
+        editor.setOption('readOnly', 'nocursor');
+        if (languageTrigger) languageTrigger.disabled = true;
+        languageItems.forEach((item) => {
+            item.disabled = true;
+        });
+    }
+
+    updateLanguageUi(entry.currentLanguage);
+    refreshContestEditor(taskIndex);
+}
+
+function clearContestTimer() {
+    if (contestTimerInterval) {
+        clearInterval(contestTimerInterval);
+        contestTimerInterval = null;
+    }
+}
+
+function formatDuration(seconds) {
+    const safe = Math.max(0, Number(seconds || 0));
+    const hours = Math.floor(safe / 3600);
+    const minutes = Math.floor((safe % 3600) / 60);
+    const secs = safe % 60;
+    if (hours > 0) {
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function getTaskStateClass(state) {
+    if (!state) return 'idle';
+    if (state.status === 'solved') return 'solved';
+    if (state.status === 'partial') return 'partial';
+    if (state.status === 'failed') return 'failed';
+    return 'idle';
+}
+
+function renderContestSessionBar(tasks) {
+    const bar = document.getElementById('contestSessionBar');
+    if (!bar) return;
+
+    const taskButtonsHtml = (tasks || []).map((task, index) => {
+        const taskLabel = (task && task.id) ? String(task.id).trim() : String.fromCharCode(65 + index);
+        const stateClass = getTaskStateClass(contestTaskStates[index]);
+        return `<button type="button" class="contest-task-nav-btn ${stateClass}" data-task-nav="${index}">${taskLabel}</button>`;
+    }).join('');
+
+    bar.innerHTML = `
+        <div class="contest-task-nav-list">
+            ${taskButtonsHtml}
+        </div>
+        <div class="contest-session-controls">
+            <div class="contest-timer-box no-copy">
+                <span>Осталось:</span>
+                <strong id="contestTimerValue">${formatDuration(contestDurationSeconds)}</strong>
+            </div>
+            <button type="button" class="back-button contest-finish-btn" id="contestFinishBtn">Завершить контест</button>
+        </div>
+    `;
+    bar.classList.remove('hidden');
+}
+
+function setActiveContestTask(index) {
+    const tasks = [...document.querySelectorAll('#contestTasks .contest-task-card')];
+    const navButtons = [...document.querySelectorAll('.contest-task-nav-btn')];
+    if (!tasks.length) return;
+
+    const safeIndex = Math.max(0, Math.min(tasks.length - 1, Number(index || 0)));
+    activeContestTaskIndex = safeIndex;
+
+    tasks.forEach((card, cardIndex) => {
+        card.classList.toggle('is-active', cardIndex === safeIndex);
+    });
+    navButtons.forEach((button, buttonIndex) => {
+        button.classList.toggle('is-current', buttonIndex === safeIndex);
+    });
+
+    refreshContestEditor(safeIndex);
+}
+
+function refreshContestTaskNavStyles() {
+    const navButtons = [...document.querySelectorAll('.contest-task-nav-btn')];
+    navButtons.forEach((button, index) => {
+        button.classList.remove('idle', 'partial', 'solved', 'failed');
+        button.classList.add(getTaskStateClass(contestTaskStates[index]));
+        button.classList.toggle('is-current', index === activeContestTaskIndex);
+    });
+}
+
+function updateContestTimer() {
+    const timerEl = document.getElementById('contestTimerValue');
+    if (!timerEl || contestFinished) return;
+
+    const elapsed = Math.floor((Date.now() - contestStartedAt) / 1000);
+    const remaining = contestDurationSeconds - elapsed;
+    timerEl.textContent = formatDuration(remaining);
+
+    if (remaining <= 0) {
+        finishContest(true);
+    }
+}
+
+function startContestSession(durationMinutes) {
+    contestFinished = false;
+    contestStartedAt = Date.now();
+    contestDurationSeconds = Math.max(15, Number(durationMinutes || 60)) * 60;
+    clearContestTimer();
+    updateContestTimer();
+    contestTimerInterval = setInterval(updateContestTimer, 1000);
+}
+
+function finishContest(autoFinished = false) {
+    if (contestFinished) return;
+    contestFinished = true;
+    clearContestTimer();
+
+    const elapsedSec = Math.floor((Date.now() - contestStartedAt) / 1000);
+    const timeUsed = Math.min(contestDurationSeconds, elapsedSec);
+    const total = contestTaskStates.length;
+    const solved = contestTaskStates.filter(item => item.status === 'solved').length;
+    const partial = contestTaskStates.filter(item => item.status === 'partial').length;
+    const failed = contestTaskStates.filter(item => item.status === 'failed').length;
+    const attempts = contestTaskStates.reduce((acc, item) => acc + Number(item.attempts || 0), 0);
+
+    document.querySelectorAll('.contest-run-btn').forEach(button => {
+        button.disabled = true;
+    });
+    document.querySelectorAll('.contest-language-select').forEach(control => {
+        control.disabled = true;
+    });
+    document.querySelectorAll('[data-language-trigger]').forEach(control => {
+        control.disabled = true;
+    });
+    document.querySelectorAll('[data-language-value]').forEach(control => {
+        control.disabled = true;
+    });
+    document.querySelectorAll('.contest-code-input').forEach(control => {
+        control.disabled = true;
+    });
+    setContestEditorsReadOnly(true);
+
+    const finishBtn = document.getElementById('contestFinishBtn');
+    if (finishBtn) finishBtn.disabled = true;
+
+    const summaryWrap = document.getElementById('contestFinishSummary');
+    if (summaryWrap) {
+        summaryWrap.innerHTML = `
+            <h3>${autoFinished ? 'Контест завершён по таймеру' : 'Контест завершён'}</h3>
+            <div class="contest-finish-grid">
+                <div><strong>Всего задач:</strong> ${total}</div>
+                <div><strong>Решено:</strong> ${solved}</div>
+                <div><strong>Частично:</strong> ${partial}</div>
+                <div><strong>Ошибки:</strong> ${failed}</div>
+                <div><strong>Попыток:</strong> ${attempts}</div>
+                <div><strong>Время:</strong> ${formatDuration(timeUsed)}</div>
+            </div>
+        `;
+        summaryWrap.classList.remove('hidden');
+    }
+}
+
+function renderTaskCard(task, index) {
+    const taskCard = document.createElement('article');
+    taskCard.className = 'contest-task-card';
+    taskCard.id = `contest-task-${index}`;
+    taskCard.dataset.taskIndex = String(index);
+
+    const taskHeader = document.createElement('div');
+    taskHeader.className = 'contest-task-header';
+    const title = document.createElement('h3');
+    title.textContent = `${task.id || String.fromCharCode(65 + index)}. ${task.title || 'Задача'}`;
+    const badge = document.createElement('span');
+    badge.className = `contest-difficulty-badge contest-difficulty-${task.difficulty || 'medium'}`;
+    badge.textContent = (task.difficulty || 'medium').toUpperCase();
+    taskHeader.appendChild(title);
+    taskHeader.appendChild(badge);
+
+    const statement = document.createElement('div');
+    statement.className = 'contest-statement';
+    const normalized = window.normalizeMathDelimiters
+        ? window.normalizeMathDelimiters(task.statement_html || '')
+        : (task.statement_html || '');
+    statement.innerHTML = sanitizeHtml(convertCodeFencesToHtml(normalized));
+
+    const spec = document.createElement('div');
+    spec.className = 'contest-spec-grid';
+    spec.appendChild(createSpecItem('Входные данные', task.input_format));
+    spec.appendChild(createSpecItem('Выходные данные', task.output_format));
+    spec.appendChild(createSpecItem('Ограничения', task.constraints));
+
+    const examplesWrap = document.createElement('div');
+    examplesWrap.className = 'contest-examples';
+    const examplesTitle = document.createElement('h4');
+    examplesTitle.textContent = 'Примеры тестов (2)';
+    examplesWrap.appendChild(examplesTitle);
+
+    const visibleTests = (Array.isArray(task.tests) ? task.tests : []).slice(0, 2);
+    if (!visibleTests.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Примеры тестов не указаны.';
+        examplesWrap.appendChild(empty);
+    } else {
+        visibleTests.forEach((test, testIndex) => {
+            const item = document.createElement('div');
+            item.className = 'contest-test-item';
+
+            const testTitle = document.createElement('h5');
+            testTitle.textContent = `Тест-пример ${testIndex + 1}${test.note ? ` — ${test.note}` : ''}`;
+
+            const testInput = document.createElement('pre');
+            testInput.className = 'contest-io-block';
+            testInput.textContent = `Input:\n${test.input || ''}`;
+
+            const testOutput = document.createElement('pre');
+            testOutput.className = 'contest-io-block';
+            testOutput.textContent = `Output:\n${test.output || ''}`;
+
+            item.appendChild(testTitle);
+            const ioWrap = document.createElement('div');
+            ioWrap.className = 'contest-example-io';
+            ioWrap.appendChild(testInput);
+            ioWrap.appendChild(testOutput);
+            item.appendChild(ioWrap);
+            examplesWrap.appendChild(item);
+        });
+    }
+
+    const hiddenTestsInfo = document.createElement('p');
+    hiddenTestsInfo.className = 'contest-hidden-tests-note';
+    const hiddenTestsCount = Math.max(0, (Array.isArray(task.tests) ? task.tests.length : 0) - 2);
+    hiddenTestsInfo.textContent = hiddenTestsCount > 0
+        ? `Остальные ${hiddenTestsCount} тестов скрыты и используются только при проверке решения.`
+        : 'Все тесты для этой задачи показаны.';
+    examplesWrap.appendChild(hiddenTestsInfo);
+
+    const runner = document.createElement('div');
+    runner.className = 'contest-runner';
+    runner.dataset.taskIndex = String(index);
+    runner.innerHTML = `
+        <h4>Проверка решения</h4>
+        <div class="contest-runner-controls">
+            <div class="contest-language-control">
+                <span class="contest-language-title">Язык:</span>
+                <div class="contest-language-dropdown" data-language-dropdown>
+                    <button type="button" class="contest-language-trigger" data-language-trigger aria-haspopup="listbox" aria-expanded="false">
+                        <span data-language-current>Python</span>
+                        <span class="contest-language-trigger-arrow" aria-hidden="true"></span>
+                    </button>
+                    <div class="contest-language-menu" data-language-menu role="listbox">
+                        <button type="button" class="contest-language-item is-selected" data-language-value="python" role="option" aria-selected="true">Python</button>
+                        <button type="button" class="contest-language-item" data-language-value="cpp" role="option" aria-selected="false">C++</button>
+                    </div>
+                    <select id="contest-language-${index}" class="contest-language-select">
+                        <option value="python" selected>Python</option>
+                        <option value="cpp">C++</option>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="contest-run-btn">Запустить на тестах</button>
+        </div>
+        <div class="contest-code-editor">
+            <textarea class="contest-code-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" wrap="off" placeholder="Введите решение..."></textarea>
+        </div>
+        <div class="contest-run-output"></div>
+    `;
+    initContestEditor(runner, index);
+
+    taskCard.appendChild(taskHeader);
+    taskCard.appendChild(statement);
+    taskCard.appendChild(spec);
+    taskCard.appendChild(examplesWrap);
+    taskCard.appendChild(runner);
+
+    if (window.renderMathInContainer) {
+        window.renderMathInContainer(taskCard);
+    }
+    enhanceCodeBlocks(statement);
+    return taskCard;
+}
+
+function renderContest(contest) {
+    clearContestEditors();
+    currentContest = contest;
+    contestTaskStates = (contest.tasks || []).map(() => ({
+        status: 'idle',
+        attempts: 0,
+        passed: 0,
+        total: 0
+    }));
+    activeContestTaskIndex = 0;
+    contestFinished = false;
+
+    const tasksWrap = document.getElementById('contestTasks');
+    tasksWrap.innerHTML = '';
+
+    (contest.tasks || []).forEach((task, index) => {
+        tasksWrap.appendChild(renderTaskCard(task, index));
+    });
+
+    renderContestSessionBar(contest.tasks || []);
+    refreshContestTaskNavStyles();
+    setActiveContestTask(0);
+}
+
+function renderRunOutput(container, payload, options = {}) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    const showDetailed = !!options.showDetailed;
+
+    if (!payload.success) {
+        const error = document.createElement('div');
+        error.className = 'feedback incorrect-feedback';
+        const compileText = String(payload.compile_error || '').trim();
+        if (payload.error && payload.error.toLowerCase().includes('компиляц')) {
+            error.textContent = '❌ Ошибка компиляции.';
+        } else {
+            error.textContent = `❌ ${payload.error || 'Ошибка запуска.'}`;
+        }
+        container.appendChild(error);
+        if (compileText) {
+            const compileDetails = document.createElement('pre');
+            compileDetails.className = 'contest-io-block';
+            compileDetails.textContent = compileText;
+            container.appendChild(compileDetails);
+        }
+        return;
+    }
+
+    const summary = document.createElement('div');
+    const allPassed = payload.verdict === 'ok' || payload.passed === payload.total;
+    const firstFailed = (payload.results || []).find(result => !result.passed);
+    const failedTestIndex = payload.failed_test || (firstFailed ? firstFailed.index : null);
+    const verdictCode = payload.verdict || (firstFailed ? firstFailed.status : 'ok');
+    const statusToText = (status) => {
+        if (status === 'wrong_answer') return 'Неверный ответ';
+        if (status === 'timeout') return 'Превышено время';
+        if (status === 'runtime_error') return 'Ошибка выполнения';
+        if (status === 'compile_error') return 'Ошибка компиляции';
+        return 'OK';
+    };
+
+    if (!showDetailed) {
+        if (allPassed) {
+            summary.className = 'feedback correct-feedback';
+            summary.textContent = '✅ OK';
+        } else if (failedTestIndex) {
+            summary.className = 'feedback incorrect-feedback';
+            summary.textContent = `❌ Ошибка на тесте #${failedTestIndex} (${statusToText(verdictCode)})`;
+        } else {
+            summary.className = 'feedback incorrect-feedback';
+            summary.textContent = '❌ Ошибка при проверке';
+        }
+    } else {
+        if (allPassed) {
+            summary.className = 'feedback correct-feedback';
+            summary.textContent = `✅ Вердикт: OK. Пройдено ${payload.passed}/${payload.total}.`;
+        } else if (failedTestIndex) {
+            summary.className = 'feedback incorrect-feedback';
+            summary.textContent = `❌ Вердикт: ${statusToText(verdictCode)} на тесте #${failedTestIndex}. Пройдено ${payload.passed}/${payload.total}.`;
+        } else {
+            summary.className = 'feedback neutral-feedback';
+            summary.textContent = `⚠️ Пройдено ${payload.passed}/${payload.total} тестов`;
+        }
+    }
+
+    container.appendChild(summary);
+
+    const details = document.createElement('div');
+    details.className = 'contest-run-details';
+
+    (payload.results || []).forEach(result => {
+        const item = document.createElement('div');
+        item.className = `contest-run-test ${result.passed ? 'passed' : 'failed'}`;
+        const title = document.createElement('h5');
+        title.textContent = `Тест ${result.index}: ${statusToText(result.status)} (${result.time_ms} мс)`;
+        item.appendChild(title);
+
+        if (showDetailed && !result.passed) {
+            const input = document.createElement('pre');
+            input.className = 'contest-io-block';
+            input.textContent = `Input:\n${result.input || ''}`;
+
+            const expected = document.createElement('pre');
+            expected.className = 'contest-io-block';
+            expected.textContent = `Expected:\n${result.expected || ''}`;
+
+            const actual = document.createElement('pre');
+            actual.className = 'contest-io-block';
+            actual.textContent = `Actual:\n${result.actual || ''}`;
+
+            item.appendChild(input);
+            item.appendChild(expected);
+            item.appendChild(actual);
+
+            if (result.stderr) {
+                const err = document.createElement('pre');
+                err.className = 'contest-io-block';
+                err.textContent = `Ошибка:\n${result.stderr}`;
+                item.appendChild(err);
+            }
+        }
+        details.appendChild(item);
+    });
+
+    if ((payload.results || []).length) {
+        if (payload.checked && payload.total && payload.checked < payload.total) {
+            const stopInfo = document.createElement('div');
+            stopInfo.className = 'feedback neutral-feedback';
+            stopInfo.textContent = `Проверка остановлена на первом падении: выполнено ${payload.checked} из ${payload.total} тестов.`;
+            container.appendChild(stopInfo);
+        }
+        container.appendChild(details);
+    }
+}
+
+function updateTaskStateAfterRun(taskIndex, payload) {
+    const state = contestTaskStates[taskIndex];
+    if (!state) return;
+    state.attempts += 1;
+    state.passed = Number(payload && payload.passed || 0);
+    state.total = Number(payload && payload.total || 0);
+
+    if (payload && payload.success && payload.passed === payload.total && payload.total > 0) {
+        state.status = 'solved';
+    } else if (payload && payload.success && payload.passed > 0) {
+        state.status = 'partial';
+    } else {
+        state.status = 'failed';
+    }
+    refreshContestTaskNavStyles();
+}
+
+async function runTaskSolution(taskIndex, runnerElement) {
+    if (contestFinished) return;
+
+    const task = (currentContest && currentContest.tasks && currentContest.tasks[taskIndex]) || null;
+    if (!task) return;
+
+    const language = runnerElement.querySelector('.contest-language-select').value;
+    const editorEntry = contestEditors.get(taskIndex);
+    const code = editorEntry && editorEntry.editor
+        ? editorEntry.editor.getValue()
+        : runnerElement.querySelector('.contest-code-input').value;
+    const outputWrap = runnerElement.querySelector('.contest-run-output');
+    const runButton = runnerElement.querySelector('.contest-run-btn');
+
+    outputWrap.innerHTML = '<div class="feedback neutral-feedback">⌛ Запуск тестов...</div>';
+    runButton.disabled = true;
+
+    try {
+        const response = await fetch('/api/contest/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language,
+                code,
+                tests: task.tests || []
+            })
+        });
+        const payload = await response.json();
+        renderRunOutput(outputWrap, payload, { showDetailed: contestShowDetailedResults });
+        updateTaskStateAfterRun(taskIndex, payload);
+    } catch (error) {
+        outputWrap.innerHTML = '<div class="feedback incorrect-feedback">Ошибка запуска. Попробуйте ещё раз.</div>';
+        console.error(error);
+    } finally {
+        runButton.disabled = false;
+    }
+}
+
+document.getElementById('contest-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const description = document.getElementById('contestDescription').value.trim();
+    const difficulty = document.getElementById('contestDifficulty').value;
+    const tasksCount = Number(document.getElementById('contestTasksCount').value || 4);
+    const durationMinutes = Number(document.getElementById('contestDuration').value || 60);
+    contestShowDetailedResults = !!document.getElementById('contestShowDetailedResults').checked;
+
+    document.getElementById('contest-loading').classList.remove('hidden');
+    startContestLoadingHints();
+    document.getElementById('contest-result').classList.add('hidden');
+    document.getElementById('contestFinishSummary').classList.add('hidden');
+    form.classList.add('hidden');
+
+    try {
+        const response = await fetch('/api/contest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                description,
+                difficulty,
+                tasks_count: tasksCount
+            })
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.error || 'Ошибка генерации контеста');
+        }
+
+        renderContest(payload);
+        startContestSession(durationMinutes);
+        document.getElementById('contest-result').classList.remove('hidden');
+    } catch (error) {
+        console.error(error);
+        alert(error.message || 'Ошибка генерации контеста');
+        form.classList.remove('hidden');
+    } finally {
+        document.getElementById('contest-loading').classList.add('hidden');
+        stopContestLoadingHints();
+    }
+});
+
+document.getElementById('newContestBtn').addEventListener('click', () => {
+    clearContestTimer();
+    clearContestEditors();
+    currentContest = null;
+    contestTaskStates = [];
+    contestFinished = false;
+    document.getElementById('contestTasks').innerHTML = '';
+    document.getElementById('contest-result').classList.add('hidden');
+    document.getElementById('contestSessionBar').classList.add('hidden');
+    document.getElementById('contestFinishSummary').classList.add('hidden');
+    document.getElementById('contest-form').classList.remove('hidden');
+    document.getElementById('contest-form').reset();
+    updateContestRangeLabels();
+    document.getElementById('contestDescription').focus();
+});
+
+document.addEventListener('click', (event) => {
+    const runBtn = event.target.closest('.contest-run-btn');
+    if (runBtn) {
+        const runner = runBtn.closest('.contest-runner');
+        if (!runner) return;
+        const taskIndex = Number(runner.dataset.taskIndex);
+        runTaskSolution(taskIndex, runner);
+        return;
+    }
+
+    const navBtn = event.target.closest('[data-task-nav]');
+    if (navBtn) {
+        const taskIndex = Number(navBtn.dataset.taskNav);
+        setActiveContestTask(taskIndex);
+        return;
+    }
+
+    const finishBtn = event.target.closest('#contestFinishBtn');
+    if (finishBtn) {
+        finishContest(false);
+    }
+});
 </script>
 {% endblock %}

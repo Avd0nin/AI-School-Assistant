@@ -19,10 +19,28 @@
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/eclipse.min.css">
+    <link rel="stylesheet" id="hljsThemeDark" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/darcula.min.css">
+    <link rel="stylesheet" id="hljsThemeLight" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/idea.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/highlight.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+    <script>
+        (function applyInitialHljsTheme() {
+            const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+            const darkLink = document.getElementById('hljsThemeDark');
+            const lightLink = document.getElementById('hljsThemeLight');
+            if (darkLink) darkLink.disabled = theme !== 'dark';
+            if (lightLink) lightLink.disabled = theme !== 'light';
+        })();
+    </script>
 </head>
 
 <body>
@@ -136,6 +154,168 @@
         window.normalizeMathDelimiters = normalizeMathDelimiters;
         window.renderMathInContainer = renderMathInContainer;
 
+        const codeLanguageAliases = {
+            js: 'javascript',
+            jsx: 'javascript',
+            node: 'javascript',
+            ts: 'typescript',
+            tsx: 'typescript',
+            py: 'python',
+            shell: 'bash',
+            sh: 'bash',
+            zsh: 'bash',
+            'c++': 'cpp',
+            cc: 'cpp',
+            cxx: 'cpp',
+            hpp: 'cpp',
+            'c#': 'csharp',
+            cs: 'csharp',
+            ps: 'powershell',
+            ps1: 'powershell',
+            psh: 'powershell',
+            yml: 'yaml',
+            rb: 'ruby',
+            kt: 'kotlin',
+            golang: 'go',
+            rs: 'rust',
+            docker: 'dockerfile',
+            make: 'makefile',
+            objc: 'objectivec',
+            'objective-c': 'objectivec',
+            vue: 'xml',
+            svelte: 'xml',
+            txt: 'plaintext',
+            text: 'plaintext',
+            plain: 'plaintext',
+            md: 'markdown'
+        };
+
+        const codeLanguageLabels = {
+            javascript: 'JavaScript',
+            typescript: 'TypeScript',
+            python: 'Python',
+            java: 'Java',
+            kotlin: 'Kotlin',
+            cpp: 'C++',
+            csharp: 'C#',
+            c: 'C',
+            go: 'Go',
+            rust: 'Rust',
+            php: 'PHP',
+            ruby: 'Ruby',
+            lua: 'Lua',
+            perl: 'Perl',
+            swift: 'Swift',
+            dart: 'Dart',
+            scala: 'Scala',
+            r: 'R',
+            matlab: 'MATLAB',
+            sql: 'SQL',
+            bash: 'Bash',
+            powershell: 'PowerShell',
+            objectivec: 'Objective-C',
+            html: 'HTML',
+            xml: 'XML',
+            css: 'CSS',
+            scss: 'SCSS',
+            less: 'LESS',
+            json: 'JSON',
+            toml: 'TOML',
+            ini: 'INI',
+            yaml: 'YAML',
+            markdown: 'Markdown',
+            dockerfile: 'Dockerfile',
+            makefile: 'Makefile',
+            latex: 'LaTeX',
+            plaintext: 'Код'
+        };
+
+        function normalizeCodeLanguage(language) {
+            const normalized = String(language || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, '');
+            if (!normalized) return '';
+            const mapped = codeLanguageAliases[normalized] || normalized;
+            return mapped.replace(/[^a-z0-9#+._-]/g, '');
+        }
+
+        function getCodeLanguageLabel(language) {
+            const normalized = normalizeCodeLanguage(language);
+            if (!normalized) return 'Код';
+            return codeLanguageLabels[normalized] || normalized.toUpperCase();
+        }
+
+        function extractCodeLanguage(codeElement, preElement) {
+            if (!codeElement && !preElement) return '';
+            const raw =
+                (codeElement && (codeElement.dataset.lang || codeElement.dataset.language)) ||
+                (preElement && (preElement.dataset.lang || preElement.dataset.language)) ||
+                '';
+            if (raw) return normalizeCodeLanguage(raw);
+
+            const classText = `${codeElement ? codeElement.className || '' : ''} ${preElement ? preElement.className || '' : ''}`;
+            const match = classText.match(/(?:lang|language)-([a-z0-9#+._-]+)/i);
+            return match ? normalizeCodeLanguage(match[1]) : '';
+        }
+
+        function highlightCodeElement(codeElement, preElement, preferredLanguage) {
+            const declaredLanguage = normalizeCodeLanguage(preferredLanguage) || extractCodeLanguage(codeElement, preElement);
+            const codeText = codeElement ? (codeElement.textContent || '') : '';
+
+            if (!window.hljs || !codeElement) {
+                return {
+                    language: declaredLanguage,
+                    label: getCodeLanguageLabel(declaredLanguage)
+                };
+            }
+
+            if (declaredLanguage && window.hljs.getLanguage(declaredLanguage)) {
+                codeElement.classList.add(`language-${declaredLanguage}`);
+                window.hljs.highlightElement(codeElement);
+                return {
+                    language: declaredLanguage,
+                    label: getCodeLanguageLabel(declaredLanguage)
+                };
+            }
+
+            if (codeText.trim()) {
+                const autoResult = window.hljs.highlightAuto(codeText);
+                const autoLanguage = normalizeCodeLanguage(autoResult && autoResult.language);
+                if (autoResult && autoResult.value) {
+                    codeElement.innerHTML = autoResult.value;
+                    codeElement.classList.add('hljs');
+                    if (autoLanguage) {
+                        codeElement.classList.add(`language-${autoLanguage}`);
+                    }
+                }
+                return {
+                    language: autoLanguage || declaredLanguage,
+                    label: getCodeLanguageLabel(autoLanguage || declaredLanguage)
+                };
+            }
+
+            window.hljs.highlightElement(codeElement);
+            return {
+                language: declaredLanguage,
+                label: getCodeLanguageLabel(declaredLanguage)
+            };
+        }
+
+        function setHljsThemeByAppTheme(theme) {
+            const nextTheme = theme === 'light' ? 'light' : 'dark';
+            const darkLink = document.getElementById('hljsThemeDark');
+            const lightLink = document.getElementById('hljsThemeLight');
+            if (darkLink) darkLink.disabled = nextTheme !== 'dark';
+            if (lightLink) lightLink.disabled = nextTheme !== 'light';
+        }
+
+        window.normalizeCodeLanguage = normalizeCodeLanguage;
+        window.getCodeLanguageLabel = getCodeLanguageLabel;
+        window.extractCodeLanguage = extractCodeLanguage;
+        window.highlightCodeElement = highlightCodeElement;
+        window.setHljsThemeByAppTheme = setHljsThemeByAppTheme;
+
         (function initThemeToggle() {
             const root = document.documentElement;
             const toggleButton = document.getElementById('themeToggle');
@@ -155,6 +335,9 @@
                 const nextTheme = theme === 'light' ? 'light' : 'dark';
                 root.classList.add('theme-switching');
                 root.setAttribute('data-theme', nextTheme);
+                if (window.setHljsThemeByAppTheme) {
+                    window.setHljsThemeByAppTheme(nextTheme);
+                }
                 if (persist) {
                     try {
                         localStorage.setItem(themeKey, nextTheme);
@@ -168,6 +351,9 @@
                 }, 420);
             };
 
+            if (window.setHljsThemeByAppTheme) {
+                window.setHljsThemeByAppTheme(getTheme());
+            }
             updateToggleState();
 
             toggleButton.addEventListener('click', () => {

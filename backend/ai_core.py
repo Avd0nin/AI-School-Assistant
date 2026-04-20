@@ -12,13 +12,17 @@ class AICore:
         )
         self.model = "gpt-4.1-mini"
 
-    def _chat(self, messages, temperature=0.7, max_tokens=2000):
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
+    def _chat(self, messages, temperature=0.7, max_tokens=2000, response_format=None):
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+        if response_format:
+            payload["response_format"] = response_format
+
+        response = self.client.chat.completions.create(**payload)
         return response.choices[0].message.content.strip()
 
     def normalize_summary_html(self, html):
@@ -47,6 +51,282 @@ class AICore:
         cleaned = re.sub(r'\s*</body>\s*</html>\s*$', '',
                          cleaned, flags=re.IGNORECASE)
         return cleaned
+
+    def _safe_json_parse(self, raw_content):
+        if not raw_content:
+            return None
+
+        cleaned = raw_content.strip()
+        cleaned = cleaned.replace("```json", "").replace("```", "").strip()
+
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        match = re.search(r'\{[\s\S]*\}', cleaned)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                return None
+        return None
+
+    def _normalize_contest_payload(self, payload, fallback_tasks_count=3):
+        if not isinstance(payload, dict):
+            payload = {}
+
+        contest_title = str(payload.get("contest_title") or "Новый контест").strip()
+        intro = str(payload.get("intro") or "Контест по олимпиадному программированию").strip()
+
+        raw_tasks = payload.get("tasks", [])
+        if not isinstance(raw_tasks, list):
+            raw_tasks = []
+
+        normalized_tasks = []
+        requested_count = max(1, min(10, int(fallback_tasks_count or 3)))
+        letter_base = ord('A')
+
+        for idx, raw_task in enumerate(raw_tasks[:requested_count]):
+            if not isinstance(raw_task, dict):
+                continue
+
+            task_id = str(raw_task.get("id") or chr(letter_base + idx)).strip()[:8]
+            title = str(raw_task.get("title") or f"Задача {task_id}").strip()
+            difficulty = str(raw_task.get("difficulty") or "medium").strip().lower()
+            statement_html = self.normalize_html(str(raw_task.get("statement_html") or raw_task.get("statement") or "").strip())
+            if not statement_html:
+                statement_html = "<p>Описание задачи не сгенерировано.</p>"
+
+            input_format = str(raw_task.get("input_format") or "См. условие.").strip()
+            output_format = str(raw_task.get("output_format") or "См. условие.").strip()
+            constraints = str(raw_task.get("constraints") or "Ограничения не указаны.").strip()
+
+            raw_examples = raw_task.get("examples", [])
+            if not isinstance(raw_examples, list):
+                raw_examples = []
+            examples = []
+            for example in raw_examples[:5]:
+                if not isinstance(example, dict):
+                    continue
+                examples.append({
+                    "input": str(example.get("input", "")).rstrip(),
+                    "output": str(example.get("output", "")).rstrip(),
+                    "explanation": str(example.get("explanation", "")).strip()
+                })
+
+            raw_tests = raw_task.get("tests", [])
+            if not isinstance(raw_tests, list):
+                raw_tests = []
+            tests = []
+            for test in raw_tests[:25]:
+                if not isinstance(test, dict):
+                    continue
+                input_text = str(test.get("input", ""))
+                output_text = str(test.get("output", ""))
+                if not input_text and not output_text:
+                    continue
+                tests.append({
+                    "input": input_text.rstrip(),
+                    "output": output_text.rstrip(),
+                    "note": str(test.get("note", "")).strip()
+                })
+
+            if not tests and examples:
+                tests = [
+                    {"input": ex["input"], "output": ex["output"], "note": "Тест из примера"}
+                    for ex in examples
+                    if ex["input"] or ex["output"]
+                ]
+
+            if not tests:
+                tests = [{"input": "", "output": "", "note": "Тесты не сгенерированы"}]
+
+            normalized_tasks.append({
+                "id": task_id,
+                "title": title,
+                "difficulty": difficulty,
+                "statement_html": statement_html,
+                "input_format": input_format,
+                "output_format": output_format,
+                "constraints": constraints,
+                "examples": examples,
+                "tests": tests
+            })
+
+        if not normalized_tasks:
+            for idx in range(requested_count):
+                letter = chr(letter_base + idx)
+                normalized_tasks.append({
+                    "id": letter,
+                    "title": f"Задача {letter}",
+                    "difficulty": "medium",
+                    "statement_html": "<p>Не удалось сгенерировать условие задачи. Повторите попытку.</p>",
+                    "input_format": "См. условие.",
+                    "output_format": "См. условие.",
+                    "constraints": "Ограничения не указаны.",
+                    "examples": [],
+                    "tests": [{"input": "", "output": "", "note": "Тесты не сгенерированы"}]
+                })
+
+        return {
+            "contest_title": contest_title,
+            "intro": intro,
+            "tasks": normalized_tasks
+        }
+
+    def create_contest_round(self, description, difficulty, tasks_count, topics):
+        safe_description = str(description or "").strip()
+        raw_difficulty = str(difficulty or "5").strip().lower()
+        safe_tasks_count = max(1, min(10, int(tasks_count or 3)))
+        safe_topics = topics if isinstance(topics, list) else []
+        safe_topics = [str(topic).strip() for topic in safe_topics if str(topic).strip()]
+
+        difficulty_alias_map = {
+            "easy": 2,
+            "medium": 5,
+            "hard": 7,
+            "olymp": 10
+        }
+        try:
+            difficulty_level = int(raw_difficulty)
+        except (TypeError, ValueError):
+            difficulty_level = difficulty_alias_map.get(raw_difficulty, 5)
+
+        difficulty_level = max(1, min(10, difficulty_level))
+
+        if difficulty_level <= 4:
+            style_rules = (
+                "Формулировки делай простыми и учебными, как в методичке: короткое и прямое условие, "
+                "без лишнего сюжета. На базовом уровне допустимы задачи формата "
+                "\"даны A и B, сделайте ...\"."
+            )
+        elif difficulty_level <= 7:
+            style_rules = (
+                "Формулировки делай понятными и практичными: можно добавить небольшой контекст, "
+                "но главная цель — ясность и тренировка базовых/средних приёмов."
+            )
+        else:
+            style_rules = (
+                "Формулировки делай интересными и небанальными: допускается короткий сюжет/контекст "
+                "(игры, роботы, логистика, анализ данных, соревнования), но без воды."
+            )
+
+        difficulty_label_map = {
+            1: "очень базовый",
+            2: "базовый",
+            3: "ниже среднего",
+            4: "средний-",
+            5: "средний",
+            6: "средний+",
+            7: "повышенный",
+            8: "сложный",
+            9: "очень сложный",
+            10: "олимпиадный"
+        }
+        difficulty_label = difficulty_label_map.get(difficulty_level, "средний")
+        topics_text = ", ".join(safe_topics) if safe_topics else "без фиксированного списка"
+        tests_per_task = 10 if safe_tasks_count <= 5 else 6
+
+        prompt = f"""
+Ты тренер по олимпиадному программированию.
+Сгенерируй JSON-объект контеста на {safe_tasks_count} задач.
+
+Параметры:
+- Сложность по шкале 1-10: {difficulty_level}
+- Уровень сложности: {difficulty_label}
+- Темы: {topics_text}
+- Доп. пожелания: {safe_description if safe_description else "не указаны"}
+
+Требования:
+1) Задачи должны быть самостоятельными, разного характера и строго соответствовать уровню сложности.
+2) Стиль формулировок по уровню сложности: {style_rules}
+3) Избегай полного копирования одной и той же структуры условий во всех задачах.
+4) Для каждой задачи верни понятное условие в HTML (без html/head/body).
+5) Для каждой задачи верни:
+   - id (A, B, C...)
+   - title
+   - difficulty
+   - statement_html
+   - input_format
+   - output_format
+   - constraints
+   - examples: ровно 2 примера с input/output/explanation
+   - tests: ровно {tests_per_task} тестов, где у каждого input/output/note
+6) Тесты должны быть полезными: граничные случаи, типичные ошибки, сложные случаи.
+7) Вывод строго в формате JSON, без markdown и без комментариев.
+8) Ничего не сокращай и не обрывай JSON.
+
+Формат:
+{{
+  "contest_title": "Название контеста",
+  "intro": "Краткое описание контеста",
+  "tasks": [
+    {{
+      "id": "A",
+      "title": "Название",
+      "difficulty": "easy|medium|hard|olymp",
+      "statement_html": "<h2>...</h2><p>...</p>",
+      "input_format": "Описание ввода",
+      "output_format": "Описание вывода",
+      "constraints": "Ограничения",
+      "examples": [
+        {{"input": "...", "output": "...", "explanation": "..."}}
+      ],
+      "tests": [
+        {{"input": "...", "output": "...", "note": "..."}}
+      ]
+    }}
+  ]
+}}
+"""
+
+        try:
+            raw_content = self._chat(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.45,
+                max_tokens=9000,
+                response_format={"type": "json_object"}
+            )
+        except Exception:
+            raw_content = self._chat(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.45,
+                max_tokens=9000
+            )
+
+        parsed = self._safe_json_parse(raw_content)
+
+        if not parsed:
+            repair_prompt = f"""
+Преобразуй текст в валидный JSON строго по указанной схеме.
+Верни только JSON без пояснений.
+Текст:
+{raw_content[:18000]}
+"""
+            repaired_content = self._chat(
+                messages=[{"role": "user", "content": repair_prompt}],
+                temperature=0.1,
+                max_tokens=9000
+            )
+            parsed = self._safe_json_parse(repaired_content)
+
+        if not parsed:
+            compact_prompt = f"""
+Сгенерируй контест в JSON на {safe_tasks_count} задач.
+Сложность: {difficulty_level}/10.
+Для каждой задачи дай 1 пример и 3 теста.
+Стиль условий: {style_rules}
+Верни только JSON.
+"""
+            compact_content = self._chat(
+                messages=[{"role": "user", "content": compact_prompt}],
+                temperature=0.35,
+                max_tokens=7000
+            )
+            parsed = self._safe_json_parse(compact_content)
+
+        return self._normalize_contest_payload(parsed, fallback_tasks_count=safe_tasks_count)
 
     def generaty_summary(self, subject, klass, theme):
         messages = [
