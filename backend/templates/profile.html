@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block content %}
+<section class="page-card glass-card container profile-page">
+    <div class="profile-head">
+        <h1 class="page-title no-copy">Профиль</h1>
+        <p class="profile-lead">Логин: <strong>{{ current_user["username"] }}</strong></p>
+    </div>
+
+    <div class="profile-tabs">
+        <a href="{{ url_for('profile', tab='summaries') }}" class="profile-tab {% if active_tab == 'summaries' %}is-active{% endif %}">
+            Конспекты
+        </a>
+        <a href="{{ url_for('profile', tab='chats') }}" class="profile-tab {% if active_tab == 'chats' %}is-active{% endif %}">
+            Чаты
+        </a>
+        <a href="{{ url_for('profile', tab='tests') }}" class="profile-tab {% if active_tab == 'tests' %}is-active{% endif %}">
+            Тесты
+        </a>
+    </div>
+
+    {% if active_tab == 'summaries' %}
+        <div class="profile-list">
+            {% if summaries %}
+                {% for item in summaries %}
+                    <article class="profile-item">
+                        <h3 class="profile-item-title">{{ item["title"] }}</h3>
+                        <p class="profile-item-meta">{{ item["subject"] }} • {{ item["klass"] }} класс • {{ item["theme"] }}</p>
+                        <div class="profile-item-actions">
+                            <span class="profile-date">{{ item["created_at"] }}</span>
+                            <a class="secondary-btn" href="{{ url_for('view_summary', summary_id=item['id']) }}">Открыть</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="profile-empty">Пока нет сохранённых конспектов. Сгенерируйте первый в разделе «Конспекты».</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if active_tab == 'chats' %}
+        <div class="profile-list">
+            {% if chats %}
+                {% for item in chats %}
+                    <article class="profile-item">
+                        <h3 class="profile-item-title">{{ item["title"] }}</h3>
+                        <p class="profile-item-meta">Сообщений: {{ item["message_count"] }} • Обновлён: {{ item["updated_at"] }}</p>
+                        <div class="profile-item-actions">
+                            <span class="profile-date">Создан: {{ item["created_at"] }}</span>
+                            <a class="secondary-btn" href="{{ url_for('chat', thread_id=item['id']) }}">Открыть чат</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="profile-empty">Пока нет диалогов. Откройте раздел «Чат», чтобы начать первый разговор.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if active_tab == 'tests' %}
+        <div class="profile-list">
+            {% if tests %}
+                {% for item in tests %}
+                    <article class="profile-item">
+                        <h3 class="profile-item-title">{{ item["subject"] }} • {{ item["theme"] }}</h3>
+                        <p class="profile-item-meta">{{ item["klass"] }} класс • Создан: {{ item["created_at"] }}</p>
+                        {% if item["attempts_count"] %}
+                            <p class="profile-item-meta">
+                                Попыток: {{ item["attempts_count"] }} • Последний результат: {{ item["last_correct_count"] }}/{{ item["last_total_questions"] }} ({{ item["last_score"] }}%)
+                            </p>
+                        {% else %}
+                            <p class="profile-item-meta">Пока нет сохранённых результатов по этому тесту.</p>
+                        {% endif %}
+                        <div class="profile-item-actions">
+                            <span class="profile-date">{% if item["last_attempt_at"] %}Последняя попытка: {{ item["last_attempt_at"] }}{% else %}Попыток пока нет{% endif %}</span>
+                            <a class="secondary-btn" href="{{ url_for('view_test', test_id=item['id']) }}">Открыть тест</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="profile-empty">Пока нет тестов. Сгенерируйте тест в разделе «Тесты».</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

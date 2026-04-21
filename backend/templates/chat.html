@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Главная страница{% endblock %}
+{% block title %}ИИ чат{% endblock %}
 
 {% block content %}
 <section id="chat-window" class="page-card glass-card chat-page">
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">
-            <div class="message assistant">
+            <div class="message assistant" id="defaultWelcomeMessage">
                 <div class="avatar assistant">AI</div>
                 <div>
                     <div class="message-content">
@@ -15,7 +15,7 @@
                     <div class="message-time" id="welcomeTime"></div>
                 </div>
             </div>
-            
+
             <div class="typing-indicator" id="typingIndicator">
                 <div class="typing-dots">
                     <span></span>
@@ -24,7 +24,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="chat-input-container">
             <input type="text" class="chat-input" id="chatInput" placeholder="Напишите сообщение..." maxlength="500">
             <button class="send-button" id="sendButton">Отправить</button>
@@ -33,250 +33,292 @@
 </section>
 
 <script>
-       class ChatBot {
-            constructor() {
-                this.chatMessages = document.getElementById('chatMessages');
-                this.chatInput = document.getElementById('chatInput');
-                this.sendButton = document.getElementById('sendButton');
-                this.typingIndicator = document.getElementById('typingIndicator');
-                this.messagesData = [];
-                
-                this.init();
-            }
-            
-            init() {
-                this.sendButton.addEventListener('click', () => this.sendMessage());
-                this.chatInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.sendMessage();
-                    }
-                });
-                
-                // Устанавливаем время для приветственного сообщения
+    const INITIAL_CHAT_THREAD_ID = {{ initial_thread_id | tojson }};
+    const INITIAL_CHAT_MESSAGES = {{ initial_messages | tojson }};
+
+    class ChatBot {
+        constructor() {
+            this.chatMessages = document.getElementById('chatMessages');
+            this.chatInput = document.getElementById('chatInput');
+            this.sendButton = document.getElementById('sendButton');
+            this.typingIndicator = document.getElementById('typingIndicator');
+            this.threadId = INITIAL_CHAT_THREAD_ID || null;
+            this.messagesData = Array.isArray(INITIAL_CHAT_MESSAGES)
+                ? INITIAL_CHAT_MESSAGES
+                    .filter(item => item && typeof item.role === 'string' && typeof item.content === 'string')
+                    .map(item => ({ role: item.role, content: item.content }))
+                : [];
+
+            this.init();
+        }
+
+        init() {
+            this.sendButton.addEventListener('click', () => this.sendMessage());
+            this.chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+
+            if (this.messagesData.length > 0) {
+                this.renderStoredMessages();
+            } else {
                 document.getElementById('welcomeTime').textContent = this.getCurrentTime();
-                
-                // Фокус на поле ввода
-                this.chatInput.focus();
             }
-            
-            sendMessage() {
-                const message = this.chatInput.value.trim();
-                if (!message) return;
-                
-                this.addMessage(message, 'user');
-                this.chatInput.value = '';
-                this.sendButton.disabled = true;
-                
-                // Показываем индикатор печати
-                this.showTyping();
-                this.scrollToBottom();
-                setTimeout(() => this.scrollToBottom(), 120);
-                
-                this.generateResponse(message);
+
+            this.scrollToBottom();
+            this.chatInput.focus();
+        }
+
+        renderStoredMessages() {
+            const welcome = document.getElementById('defaultWelcomeMessage');
+            if (welcome) {
+                welcome.remove();
             }
-            
-            addMessage(text, sender) {
-                this.messagesData.push({ 
+
+            this.messagesData.forEach(item => {
+                this.renderMessage(item.content, item.role, false);
+            });
+            this.scrollToBottom();
+        }
+
+        sendMessage() {
+            const message = this.chatInput.value.trim();
+            if (!message) return;
+
+            this.addMessage(message, 'user');
+            this.chatInput.value = '';
+            this.sendButton.disabled = true;
+
+            this.showTyping();
+            this.scrollToBottom();
+            setTimeout(() => this.scrollToBottom(), 120);
+
+            this.generateResponse(message);
+        }
+
+        addMessage(text, sender) {
+            this.renderMessage(text, sender, true);
+        }
+
+        renderMessage(text, sender, pushToHistory) {
+            if (pushToHistory) {
+                this.messagesData.push({
                     role: sender,
                     content: text,
                 });
-
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${sender}`;
-                
-                const avatar = document.createElement('div');
-                avatar.className = `avatar ${sender}`;
-                avatar.textContent = sender === 'user' ? 'Вы' : 'AI';
-                
-                const messageContainer = document.createElement('div');
-                messageContainer.className = 'message-container';
-                
-                const messageContent = document.createElement('div');
-                messageContent.className = 'message-content';
-                if (sender === 'assistant') {
-                    const normalized = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(text) : text;
-                    const withCodeBlocks = this.convertCodeFencesToHtml(normalized);
-                    messageContent.innerHTML = this.sanitizeHtml(withCodeBlocks);
-                } else {
-                    messageContent.textContent = text;
-                }
-                
-                const timeDiv = document.createElement('div');
-                timeDiv.className = 'message-time';
-                timeDiv.textContent = this.getCurrentTime();
-                
-                messageContainer.appendChild(messageContent);
-                messageContainer.appendChild(timeDiv);
-                
-                if (sender === 'user') {
-                    messageDiv.appendChild(avatar);
-                    messageDiv.appendChild(messageContainer);
-                } else {
-                    messageDiv.appendChild(avatar);
-                    messageDiv.appendChild(messageContainer);
-                }
-                
-                this.chatMessages.insertBefore(messageDiv, this.typingIndicator);
-                if (sender === 'assistant' && window.renderMathInContainer) {
-                    window.renderMathInContainer(messageContent);
-                }
-                if (sender === 'assistant') {
-                    this.enhanceCodeBlocks(messageContent);
-                }
-                if (sender === 'user') {
-                    this.scrollToBottom();
-                }
             }
 
-            sanitizeHtml(rawHtml) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(rawHtml || '', 'text/html');
-                const blockedTags = ['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta'];
-                blockedTags.forEach(tag => {
-                    doc.querySelectorAll(tag).forEach(el => el.remove());
-                });
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
 
-                doc.querySelectorAll('*').forEach(el => {
-                    [...el.attributes].forEach(attr => {
-                        const name = attr.name.toLowerCase();
-                        const value = (attr.value || '').toLowerCase();
-                        if (name.startsWith('on') || name === 'style' || value.includes('javascript:')) {
-                            el.removeAttribute(attr.name);
-                        }
-                    });
-                });
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${sender}`;
+            avatar.textContent = sender === 'user' ? 'Вы' : 'AI';
 
-                return doc.body.innerHTML;
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            if (sender === 'assistant') {
+                const normalized = window.normalizeMathDelimiters ? window.normalizeMathDelimiters(text) : text;
+                const withCodeBlocks = this.convertCodeFencesToHtml(normalized);
+                messageContent.innerHTML = this.sanitizeHtml(withCodeBlocks);
+            } else {
+                messageContent.textContent = text;
             }
 
-            convertCodeFencesToHtml(rawText) {
-                if (!rawText) return '';
-                return rawText.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
-                    const safeLang = (lang || '').toLowerCase().trim();
-                    const langClass = safeLang ? `language-${safeLang}` : '';
-                    const escapedCode = String(code)
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-                    return `<pre><code class="${langClass}">${escapedCode}</code></pre>`;
-                });
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = this.getCurrentTime();
+
+            messageContainer.appendChild(messageContent);
+            messageContainer.appendChild(timeDiv);
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContainer);
+
+            this.chatMessages.insertBefore(messageDiv, this.typingIndicator);
+            if (sender === 'assistant' && window.renderMathInContainer) {
+                window.renderMathInContainer(messageContent);
             }
-
-            enhanceCodeBlocks(container) {
-                if (!container) return;
-                const preBlocks = container.querySelectorAll('pre');
-                preBlocks.forEach(pre => {
-                    if (pre.dataset.enhanced === '1') return;
-
-                    const codeEl = pre.querySelector('code') || pre;
-                    const classText = (codeEl.className || '') + ' ' + (pre.className || '');
-                    const langMatch = classText.match(/language-([a-z0-9_-]+)/i);
-                    const lang = langMatch ? langMatch[1].toUpperCase() : 'КОД';
-
-                    const wrap = document.createElement('div');
-                    wrap.className = 'summary-code-wrap';
-
-                    const head = document.createElement('div');
-                    head.className = 'summary-code-head';
-
-                    const langTag = document.createElement('span');
-                    langTag.className = 'summary-code-lang no-copy';
-                    langTag.textContent = lang;
-
-                    const copyBtn = document.createElement('button');
-                    copyBtn.type = 'button';
-                    copyBtn.className = 'summary-copy-btn';
-                    copyBtn.textContent = 'Скопировать';
-                    copyBtn.addEventListener('click', async () => {
-                        const textToCopy = codeEl.textContent || '';
-                        try {
-                            await navigator.clipboard.writeText(textToCopy);
-                            copyBtn.textContent = 'Скопировано';
-                            setTimeout(() => {
-                                copyBtn.textContent = 'Скопировать';
-                            }, 1200);
-                        } catch (e) {
-                            copyBtn.textContent = 'Ошибка';
-                            setTimeout(() => {
-                                copyBtn.textContent = 'Скопировать';
-                            }, 1200);
-                        }
-                    });
-
-                    head.appendChild(langTag);
-                    head.appendChild(copyBtn);
-                    pre.parentNode.insertBefore(wrap, pre);
-                    wrap.appendChild(head);
-                    wrap.appendChild(pre);
-
-                    if (window.hljs && codeEl) {
-                        window.hljs.highlightElement(codeEl);
-                    }
-
-                    pre.dataset.enhanced = '1';
-                });
+            if (sender === 'assistant') {
+                this.enhanceCodeBlocks(messageContent);
             }
-
-            scrollToBottom() {
-                if (!this.chatMessages) return;
-                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-            }
-
-            generateResponse(userMessage) {
-                const message = userMessage.trim();
-                
-                if (message === '') {
-                    this.addMessage('Я отвечу на ваш вопрос, только уточните)', 'assistant');
-                }
-                else {
-                    fetch('/api/question', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            question: message,
-                            message_history: this.messagesData
-                        })
-                    })
-                    // СТАЛО:
-                    .then(response => response.text())
-                    .then(text => {
-                        this.hideTyping();
-                        this.addMessage(text, 'assistant');
-                    })
-                    .catch(error => {
-                        this.hideTyping();
-                        this.addMessage('Произошла ошибка при получении ответа. Попробуйте еще раз.', 'assistant');
-                        console.error('Ошибка:', error);
-                    })
-                    .finally(() => {
-                        this.sendButton.disabled = false;
-                        this.chatInput.focus();
-                    });
-                }
-            }
-            
-            showTyping() {
-                this.typingIndicator.style.display = 'block';
-            }
-            
-            hideTyping() {
-                this.typingIndicator.style.display = 'none';
-            }
-            
-            getCurrentTime() {
-                const now = new Date();
-                return now.toLocaleTimeString('ru-RU', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-            }
-            
+            this.scrollToBottom();
         }
-        document.addEventListener('DOMContentLoaded', () => {
-            new ChatBot();
-        });
+
+        sanitizeHtml(rawHtml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawHtml || '', 'text/html');
+            const blockedTags = ['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta'];
+            blockedTags.forEach(tag => {
+                doc.querySelectorAll(tag).forEach(el => el.remove());
+            });
+
+            doc.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(attr => {
+                    const name = attr.name.toLowerCase();
+                    const value = (attr.value || '').toLowerCase();
+                    if (name.startsWith('on') || name === 'style' || value.includes('javascript:')) {
+                        el.removeAttribute(attr.name);
+                    }
+                });
+            });
+
+            return doc.body.innerHTML;
+        }
+
+        convertCodeFencesToHtml(rawText) {
+            if (!rawText) return '';
+            return rawText.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+                const safeLang = (lang || '').toLowerCase().trim();
+                const langClass = safeLang ? `language-${safeLang}` : '';
+                const escapedCode = String(code)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                return `<pre><code class="${langClass}">${escapedCode}</code></pre>`;
+            });
+        }
+
+        enhanceCodeBlocks(container) {
+            if (!container) return;
+            const preBlocks = container.querySelectorAll('pre');
+            preBlocks.forEach(pre => {
+                if (pre.dataset.enhanced === '1') return;
+
+                const codeEl = pre.querySelector('code') || pre;
+                const classText = (codeEl.className || '') + ' ' + (pre.className || '');
+                const langMatch = classText.match(/language-([a-z0-9_-]+)/i);
+                const lang = langMatch ? langMatch[1].toUpperCase() : 'КОД';
+
+                const wrap = document.createElement('div');
+                wrap.className = 'summary-code-wrap';
+
+                const head = document.createElement('div');
+                head.className = 'summary-code-head';
+
+                const langTag = document.createElement('span');
+                langTag.className = 'summary-code-lang no-copy';
+                langTag.textContent = lang;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.type = 'button';
+                copyBtn.className = 'summary-copy-btn';
+                copyBtn.textContent = 'Скопировать';
+                copyBtn.addEventListener('click', async () => {
+                    const textToCopy = codeEl.textContent || '';
+                    try {
+                        await navigator.clipboard.writeText(textToCopy);
+                        copyBtn.textContent = 'Скопировано';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Скопировать';
+                        }, 1200);
+                    } catch (e) {
+                        copyBtn.textContent = 'Ошибка';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Скопировать';
+                        }, 1200);
+                    }
+                });
+
+                head.appendChild(langTag);
+                head.appendChild(copyBtn);
+                pre.parentNode.insertBefore(wrap, pre);
+                wrap.appendChild(head);
+                wrap.appendChild(pre);
+
+                if (window.hljs && codeEl) {
+                    window.hljs.highlightElement(codeEl);
+                }
+
+                pre.dataset.enhanced = '1';
+            });
+        }
+
+        scrollToBottom() {
+            if (!this.chatMessages) return;
+            this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        }
+
+        generateResponse(userMessage) {
+            const message = userMessage.trim();
+
+            if (message === '') {
+                this.addMessage('Я отвечу на ваш вопрос, только уточните)', 'assistant');
+                this.sendButton.disabled = false;
+                return;
+            }
+
+            fetch('/api/question', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question: message,
+                    message_history: this.messagesData,
+                    thread_id: this.threadId
+                })
+            })
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/login?next=/chat';
+                        throw new Error('Требуется вход');
+                    }
+                    if (!response.ok) {
+                        throw new Error('Ошибка сервера');
+                    }
+                    return response.json();
+                })
+                .then(payload => {
+                    this.hideTyping();
+                    if (payload && payload.thread_id) {
+                        this.threadId = payload.thread_id;
+                    }
+                    if (payload && payload.answer) {
+                        this.addMessage(payload.answer, 'assistant');
+                    } else {
+                        this.addMessage('Не удалось получить ответ. Попробуйте ещё раз.', 'assistant');
+                    }
+                })
+                .catch(error => {
+                    if (error.message === 'Требуется вход') {
+                        this.hideTyping();
+                        return;
+                    }
+                    this.hideTyping();
+                    this.addMessage('Произошла ошибка при получении ответа. Попробуйте еще раз.', 'assistant');
+                    console.error('Ошибка:', error);
+                })
+                .finally(() => {
+                    this.sendButton.disabled = false;
+                    this.chatInput.focus();
+                });
+        }
+
+        showTyping() {
+            this.typingIndicator.style.display = 'block';
+        }
+
+        hideTyping() {
+            this.typingIndicator.style.display = 'none';
+        }
+
+        getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        new ChatBot();
+    });
 </script>
 {% endblock %}

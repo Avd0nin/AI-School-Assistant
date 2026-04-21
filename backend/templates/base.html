@@ -41,6 +41,9 @@
                     <li><a href="/make_summary">Конспекты</a></li>
                     <li><a href="/chat">Чат</a></li>
                     <li><a href="/make_test">Тесты</a></li>
+                    {% if current_user %}
+                        <li><a href="/profile">Профиль</a></li>
+                    {% endif %}
                     <li><a href="/help">Помощь</a></li>
                 </ul>
             </nav>
@@ -65,7 +68,15 @@
                         </svg>
                     </span>
                 </button>
-                <button type="button" class="nav-cta">Войти</button>
+                {% if current_user %}
+                    <span class="user-chip">{{ current_user["username"] }}</span>
+                    <form method="post" action="{{ url_for('logout') }}" class="header-auth-form">
+                        <button type="submit" class="nav-cta nav-cta-secondary">Выйти</button>
+                    </form>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="nav-cta">Войти</a>
+                    <a href="{{ url_for('register') }}" class="nav-cta nav-cta-secondary">Регистрация</a>
+                {% endif %}
             </div>
         </div>
     </header>
