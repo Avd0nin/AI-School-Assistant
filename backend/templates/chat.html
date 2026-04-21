@@ -7,7 +7,9 @@
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">
             <div class="message assistant" id="defaultWelcomeMessage">
-                <div class="avatar assistant">AI</div>
+                <button type="button" class="avatar assistant assistant-profile-trigger" data-assistant-profile-trigger aria-label="Открыть профиль AI-ассистента">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="" class="assistant-logo-image" loading="lazy" decoding="async">
+                </button>
                 <div>
                     <div class="message-content">
                         Привет! Я помогу с учебой: объясню тему, дам план подготовки, сделаю краткий разбор и примеры. С чего начнем?
@@ -42,6 +44,7 @@
             this.chatInput = document.getElementById('chatInput');
             this.sendButton = document.getElementById('sendButton');
             this.typingIndicator = document.getElementById('typingIndicator');
+            this.assistantLogoSrc = "{{ url_for('static', filename='images/logo.png') }}";
             this.threadId = INITIAL_CHAT_THREAD_ID || null;
             this.messagesData = Array.isArray(INITIAL_CHAT_MESSAGES)
                 ? INITIAL_CHAT_MESSAGES
@@ -113,9 +116,24 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
 
-            const avatar = document.createElement('div');
+            const avatar = document.createElement(sender === 'assistant' ? 'button' : 'div');
             avatar.className = `avatar ${sender}`;
-            avatar.textContent = sender === 'user' ? 'Вы' : 'AI';
+            if (sender === 'assistant') {
+                avatar.type = 'button';
+                avatar.classList.add('assistant-profile-trigger');
+                avatar.setAttribute('data-assistant-profile-trigger', '');
+                avatar.setAttribute('aria-label', 'Открыть профиль AI-ассистента');
+
+                const avatarImage = document.createElement('img');
+                avatarImage.src = this.assistantLogoSrc;
+                avatarImage.alt = '';
+                avatarImage.className = 'assistant-logo-image';
+                avatarImage.loading = 'lazy';
+                avatarImage.decoding = 'async';
+                avatar.appendChild(avatarImage);
+            } else {
+                avatar.textContent = 'Вы';
+            }
 
             const messageContainer = document.createElement('div');
             messageContainer.className = 'message-container';

@@ -19,10 +19,28 @@
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/eclipse.min.css">
+    <link rel="stylesheet" id="hljsThemeDark" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/darcula.min.css">
+    <link rel="stylesheet" id="hljsThemeLight" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/idea.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/highlight.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+    <script>
+        (function applyInitialHljsTheme() {
+            const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+            const darkLink = document.getElementById('hljsThemeDark');
+            const lightLink = document.getElementById('hljsThemeLight');
+            if (darkLink) darkLink.disabled = theme !== 'dark';
+            if (lightLink) lightLink.disabled = theme !== 'light';
+        })();
+    </script>
 </head>
 
 <body>
@@ -31,10 +49,14 @@
 
     <header class="site-header">
         <div class="header-inner">
-            <a href="/" class="logo">
-                <span class="logo-text">PhantomHelper</span>
-                <span class="logo-mark" aria-hidden="true">AI</span>
-            </a>
+            <div class="logo-group">
+                <a href="/" class="logo">
+                    <span class="logo-text">PhantomHelper</span>
+                </a>
+                <button type="button" class="logo-mark assistant-profile-trigger" data-assistant-profile-trigger aria-label="Открыть профиль AI-ассистента" title="Профиль AI-ассистента">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="" class="assistant-logo-image" loading="eager" decoding="async">
+                </button>
+            </div>
             <nav class="site-nav-inline">
                 <ul class="nav-list">
                     <li><a href="/">Главная</a></li>
@@ -88,6 +110,35 @@
     <footer class="site-footer">
         <p>&copy; 2026 PhantomHelperAI. Все права защищены.</p>
     </footer>
+    <div class="assistant-profile-overlay" id="assistantProfileOverlay" hidden>
+        <div class="assistant-profile-card" role="dialog" aria-modal="true" aria-labelledby="assistantProfileTitle">
+            <button type="button" class="assistant-profile-close" data-assistant-profile-close aria-label="Закрыть профиль">
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path d="M6.75 6.75L17.25 17.25M17.25 6.75L6.75 17.25"></path>
+                </svg>
+            </button>
+            <div class="assistant-profile-main">
+                <div class="assistant-profile-avatar">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Логотип PhantomHelper AI" class="assistant-logo-image" loading="eager" decoding="async">
+                </div>
+                <div class="assistant-profile-meta">
+                    <h2 id="assistantProfileTitle">PhantomHelper AI</h2>
+                    <p class="assistant-profile-handle">@PhantomHelperAI</p>
+                </div>
+            </div>
+            <p class="assistant-profile-description">
+                Я ваш AI-помощник для учёбы: объясняю темы, делаю конспекты, тесты и помогаю разобрать сложные задачи шаг за шагом. По вопросам пишите по кнопке «Поддержка», а свежие обновления и новости публикуются в «Телеграмм канале».
+            </p>
+            <div class="assistant-profile-actions">
+                <a href="https://t.me/ohipo" target="_blank" rel="noopener noreferrer" class="assistant-profile-link assistant-profile-link-primary">
+                    Поддержка
+                </a>
+                <a href="https://t.me/PhantomHelperAI" target="_blank" rel="noopener noreferrer" class="assistant-profile-link assistant-profile-link-secondary">
+                    Телеграмм канал
+                </a>
+            </div>
+        </div>
+    </div>
     <script>
         function normalizeMathDelimiters(input) {
             if (typeof input !== 'string') return '';
@@ -114,6 +165,168 @@
         window.normalizeMathDelimiters = normalizeMathDelimiters;
         window.renderMathInContainer = renderMathInContainer;
 
+        const codeLanguageAliases = {
+            js: 'javascript',
+            jsx: 'javascript',
+            node: 'javascript',
+            ts: 'typescript',
+            tsx: 'typescript',
+            py: 'python',
+            shell: 'bash',
+            sh: 'bash',
+            zsh: 'bash',
+            'c++': 'cpp',
+            cc: 'cpp',
+            cxx: 'cpp',
+            hpp: 'cpp',
+            'c#': 'csharp',
+            cs: 'csharp',
+            ps: 'powershell',
+            ps1: 'powershell',
+            psh: 'powershell',
+            yml: 'yaml',
+            rb: 'ruby',
+            kt: 'kotlin',
+            golang: 'go',
+            rs: 'rust',
+            docker: 'dockerfile',
+            make: 'makefile',
+            objc: 'objectivec',
+            'objective-c': 'objectivec',
+            vue: 'xml',
+            svelte: 'xml',
+            txt: 'plaintext',
+            text: 'plaintext',
+            plain: 'plaintext',
+            md: 'markdown'
+        };
+
+        const codeLanguageLabels = {
+            javascript: 'JavaScript',
+            typescript: 'TypeScript',
+            python: 'Python',
+            java: 'Java',
+            kotlin: 'Kotlin',
+            cpp: 'C++',
+            csharp: 'C#',
+            c: 'C',
+            go: 'Go',
+            rust: 'Rust',
+            php: 'PHP',
+            ruby: 'Ruby',
+            lua: 'Lua',
+            perl: 'Perl',
+            swift: 'Swift',
+            dart: 'Dart',
+            scala: 'Scala',
+            r: 'R',
+            matlab: 'MATLAB',
+            sql: 'SQL',
+            bash: 'Bash',
+            powershell: 'PowerShell',
+            objectivec: 'Objective-C',
+            html: 'HTML',
+            xml: 'XML',
+            css: 'CSS',
+            scss: 'SCSS',
+            less: 'LESS',
+            json: 'JSON',
+            toml: 'TOML',
+            ini: 'INI',
+            yaml: 'YAML',
+            markdown: 'Markdown',
+            dockerfile: 'Dockerfile',
+            makefile: 'Makefile',
+            latex: 'LaTeX',
+            plaintext: 'Код'
+        };
+
+        function normalizeCodeLanguage(language) {
+            const normalized = String(language || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, '');
+            if (!normalized) return '';
+            const mapped = codeLanguageAliases[normalized] || normalized;
+            return mapped.replace(/[^a-z0-9#+._-]/g, '');
+        }
+
+        function getCodeLanguageLabel(language) {
+            const normalized = normalizeCodeLanguage(language);
+            if (!normalized) return 'Код';
+            return codeLanguageLabels[normalized] || normalized.toUpperCase();
+        }
+
+        function extractCodeLanguage(codeElement, preElement) {
+            if (!codeElement && !preElement) return '';
+            const raw =
+                (codeElement && (codeElement.dataset.lang || codeElement.dataset.language)) ||
+                (preElement && (preElement.dataset.lang || preElement.dataset.language)) ||
+                '';
+            if (raw) return normalizeCodeLanguage(raw);
+
+            const classText = `${codeElement ? codeElement.className || '' : ''} ${preElement ? preElement.className || '' : ''}`;
+            const match = classText.match(/(?:lang|language)-([a-z0-9#+._-]+)/i);
+            return match ? normalizeCodeLanguage(match[1]) : '';
+        }
+
+        function highlightCodeElement(codeElement, preElement, preferredLanguage) {
+            const declaredLanguage = normalizeCodeLanguage(preferredLanguage) || extractCodeLanguage(codeElement, preElement);
+            const codeText = codeElement ? (codeElement.textContent || '') : '';
+
+            if (!window.hljs || !codeElement) {
+                return {
+                    language: declaredLanguage,
+                    label: getCodeLanguageLabel(declaredLanguage)
+                };
+            }
+
+            if (declaredLanguage && window.hljs.getLanguage(declaredLanguage)) {
+                codeElement.classList.add(`language-${declaredLanguage}`);
+                window.hljs.highlightElement(codeElement);
+                return {
+                    language: declaredLanguage,
+                    label: getCodeLanguageLabel(declaredLanguage)
+                };
+            }
+
+            if (codeText.trim()) {
+                const autoResult = window.hljs.highlightAuto(codeText);
+                const autoLanguage = normalizeCodeLanguage(autoResult && autoResult.language);
+                if (autoResult && autoResult.value) {
+                    codeElement.innerHTML = autoResult.value;
+                    codeElement.classList.add('hljs');
+                    if (autoLanguage) {
+                        codeElement.classList.add(`language-${autoLanguage}`);
+                    }
+                }
+                return {
+                    language: autoLanguage || declaredLanguage,
+                    label: getCodeLanguageLabel(autoLanguage || declaredLanguage)
+                };
+            }
+
+            window.hljs.highlightElement(codeElement);
+            return {
+                language: declaredLanguage,
+                label: getCodeLanguageLabel(declaredLanguage)
+            };
+        }
+
+        function setHljsThemeByAppTheme(theme) {
+            const nextTheme = theme === 'light' ? 'light' : 'dark';
+            const darkLink = document.getElementById('hljsThemeDark');
+            const lightLink = document.getElementById('hljsThemeLight');
+            if (darkLink) darkLink.disabled = nextTheme !== 'dark';
+            if (lightLink) lightLink.disabled = nextTheme !== 'light';
+        }
+
+        window.normalizeCodeLanguage = normalizeCodeLanguage;
+        window.getCodeLanguageLabel = getCodeLanguageLabel;
+        window.extractCodeLanguage = extractCodeLanguage;
+        window.highlightCodeElement = highlightCodeElement;
+        window.setHljsThemeByAppTheme = setHljsThemeByAppTheme;
+
         (function initThemeToggle() {
             const root = document.documentElement;
             const toggleButton = document.getElementById('themeToggle');
@@ -133,6 +346,9 @@
                 const nextTheme = theme === 'light' ? 'light' : 'dark';
                 root.classList.add('theme-switching');
                 root.setAttribute('data-theme', nextTheme);
+                if (window.setHljsThemeByAppTheme) {
+                    window.setHljsThemeByAppTheme(nextTheme);
+                }
                 if (persist) {
                     try {
                         localStorage.setItem(themeKey, nextTheme);
@@ -146,6 +362,9 @@
                 }, 420);
             };
 
+            if (window.setHljsThemeByAppTheme) {
+                window.setHljsThemeByAppTheme(getTheme());
+            }
             updateToggleState();
 
             toggleButton.addEventListener('click', () => {
@@ -191,6 +410,68 @@
             document.addEventListener('focusin', (event) => {
                 if (header.contains(event.target)) {
                     header.classList.remove('is-hidden');
+                }
+            });
+        })();
+
+        (function initAssistantProfilePopup() {
+            const overlay = document.getElementById('assistantProfileOverlay');
+            if (!overlay) return;
+
+            const OPEN_CLASS = 'is-open';
+            const closeDelayMs = 180;
+            const body = document.body;
+
+            const lockBodyScroll = () => {
+                body.classList.add('profile-open');
+            };
+
+            const unlockBodyScroll = () => {
+                body.classList.remove('profile-open');
+            };
+
+            const openProfile = () => {
+                if (!overlay.hidden && overlay.classList.contains(OPEN_CLASS)) return;
+                overlay.hidden = false;
+                window.requestAnimationFrame(() => {
+                    overlay.classList.add(OPEN_CLASS);
+                });
+                lockBodyScroll();
+            };
+
+            const closeProfile = () => {
+                overlay.classList.remove(OPEN_CLASS);
+                unlockBodyScroll();
+                window.setTimeout(() => {
+                    if (!overlay.classList.contains(OPEN_CLASS)) {
+                        overlay.hidden = true;
+                    }
+                }, closeDelayMs);
+            };
+
+            document.addEventListener('click', (event) => {
+                const trigger = event.target.closest('[data-assistant-profile-trigger]');
+                if (trigger) {
+                    event.preventDefault();
+                    openProfile();
+                    return;
+                }
+
+                const closeButton = event.target.closest('[data-assistant-profile-close]');
+                if (closeButton) {
+                    event.preventDefault();
+                    closeProfile();
+                    return;
+                }
+
+                if (!overlay.hidden && event.target === overlay) {
+                    closeProfile();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !overlay.hidden) {
+                    closeProfile();
                 }
             });
         })();

@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}Генератор контестов{% endblock %}
+
+{% block content %}
+<section class="page-card glass-card container contest-container">
+    <h1 class="page-title no-copy">Генератор контестов</h1>
+    <p class="contest-lead">Соберите раунд по олимпиадному программированию, получите задачи с примерами и прогоняйте решения на тестах.</p>
+
+    <form id="contest-form" autocomplete="off">
+        <div class="form-group">
+            <label for="contestDescription">Описание тем и пожеланий:</label>
+            <textarea id="contestDescription" name="description" rows="4" placeholder="Например: графы + динамика, акцент на BFS/DFS и рюкзак, без слишком длинной математики" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+        </div>
+
+        <div class="contest-form-grid">
+            <div class="form-group">
+                <label for="contestDifficulty">Сложность:</label>
+                <select id="contestDifficulty" name="difficulty">
+                    <option value="easy">Базовая</option>
+                    <option value="medium" selected>Средняя</option>
+                    <option value="hard">Сложная</option>
+                    <option value="olymp">Олимпиадная</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="contestTasksCount">Количество задач:</label>
+                <input type="number" id="contestTasksCount" name="tasks_count" min="1" max="10" value="4" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Темы, которые включить:</label>
+            <div class="contest-topics-grid" id="contestTopics">
+                <label class="contest-topic-pill"><input type="checkbox" value="Жадные алгоритмы"> Жадные</label>
+                <label class="contest-topic-pill"><input type="checkbox" value="Динамическое программирование"> ДП</label>
+                <label class="contest-topic-pill"><input type="checkbox" value="Графы"> Графы</label>
+                <label class="contest-topic-pill"><input type="checkbox" value="Строки"> Строки</label>
+                <label class="contest-topic-pill"><input type="checkbox" value="Теория чисел"> Теория чисел</label>
+                <label class="contest-topic-pill"><input type="checkbox" value="Структуры данных"> Структуры данных</label>
+                <label class="contest-topic-pill"><input type="checkbox" value="Бинарный поиск"> Бинарный поиск</label>
+                <label class="contest-topic-pill"><input type="checkbox" value="Комбинаторика"> Комбинаторика</label>
+            </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Сгенерировать контест</button>
+    </form>
+
+    <div id="contest-loading" class="hidden test-loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-hint-strip">
+            <div class="loading-hint no-copy" id="contestLoadingHint"></div>
+        </div>
+    </div>
+
+    <div id="contest-result" class="hidden contest-result-wrap">
+        <div class="result-actions">
+            <button type="button" class="back-button" id="newContestBtn">Создать новый контест</button>
+        </div>
+        <div class="contest-meta" id="contestMeta"></div>
+        <div class="contest-tasks" id="contestTasks"></div>
+    </div>
+</section>
+
+<script>
+    const contestLoadingHints = [
+        'Подбираем задачи и балансируем сложность раунда…',
+        'Готовим примеры и качественные тесты к каждой задаче…',
+        'Почти готово: формируем контест в олимпиадном формате…',
+        'После генерации можно сразу прогнать Python/C++ решения на тестах.'
+    ];
+    let contestLoadingHintTimer = null;
+    let currentContest = null;
+
+    const starterCode = {
+        python: `# Решение на Python\n\ndef solve():\n    pass\n\nif __name__ == "__main__":\n    solve()\n`,
+        cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    return 0;\n}\n`
+    };
+
+    function startContestLoadingHints() {
+        const hintEl = document.getElementById('contestLoadingHint');
+        if (!hintEl) return;
+        const showRandomHint = () => {
+            hintEl.textContent = contestLoadingHints[Math.floor(Math.random() * contestLoadingHints.length)];
+        };
+        showRandomHint();
+        contestLoadingHintTimer = setInterval(showRandomHint, 2800);
+    }
+
+    function stopContestLoadingHints() {
+        if (!contestLoadingHintTimer) return;
+        clearInterval(contestLoadingHintTimer);
+        contestLoadingHintTimer = null;
+    }
+
+    function sanitizeHtml(rawHtml) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawHtml || '', 'text/html');
+        const blockedTags = ['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta'];
+        blockedTags.forEach(tag => doc.querySelectorAll(tag).forEach(el => el.remove()));
+
+        doc.querySelectorAll('*').forEach(el => {
+            [...el.attributes].forEach(attr => {
+                const name = attr.name.toLowerCase();
+                const value = (attr.value || '').toLowerCase();
+                if (name.startsWith('on') || name === 'style' || value.includes('javascript:')) {
+                    el.removeAttribute(attr.name);
+                }
+            });
+        });
+        return doc.body.innerHTML;
+    }
+
+    function convertCodeFencesToHtml(rawText) {
+        if (!rawText) return '';
+        return rawText.replace(/```([a-zA-Z0-9_+#.-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+            const safeLang = window.normalizeCodeLanguage
+                ? window.normalizeCodeLanguage(lang)
+                : (lang || '').toLowerCase().trim();
+            const langClass = safeLang ? `language-${safeLang}` : '';
+            const langData = safeLang ? ` data-lang="${safeLang}"` : '';
+            const escapedCode = String(code)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            return `<pre><code class="${langClass}"${langData}>${escapedCode}</code></pre>`;
+        });
+    }
+
+    function enhanceCodeBlocks(container) {
+        if (!container) return;
+        container.querySelectorAll('pre').forEach(pre => {
+            if (pre.dataset.enhanced === '1') return;
+
+            const codeEl = pre.querySelector('code') || pre;
+            const declaredLanguage = window.extractCodeLanguage
+                ? window.extractCodeLanguage(codeEl, pre)
+                : '';
+            let languageLabel = window.getCodeLanguageLabel
+                ? window.getCodeLanguageLabel(declaredLanguage)
+                : (declaredLanguage ? declaredLanguage.toUpperCase() : 'Код');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'summary-code-wrap';
+
+            const head = document.createElement('div');
+            head.className = 'summary-code-head';
+
+            const langTag = document.createElement('span');
+            langTag.className = 'summary-code-lang no-copy';
+            langTag.textContent = languageLabel;
+
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'summary-copy-btn';
+            copyBtn.textContent = 'Скопировать';
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(codeEl.textContent || '');
+                    copyBtn.textContent = 'Скопировано';
+                } catch (e) {
+                    copyBtn.textContent = 'Ошибка';
+                }
+                setTimeout(() => {
+                    copyBtn.textContent = 'Скопировать';
+                }, 1200);
+            });
+
+            head.appendChild(langTag);
+            head.appendChild(copyBtn);
+            pre.parentNode.insertBefore(wrap, pre);
+            wrap.appendChild(head);
+            wrap.appendChild(pre);
+
+            if (window.highlightCodeElement) {
+                const result = window.highlightCodeElement(codeEl, pre, declaredLanguage);
+                languageLabel = result && result.label ? result.label : languageLabel;
+                langTag.textContent = languageLabel;
+            } else if (window.hljs && codeEl) {
+                window.hljs.highlightElement(codeEl);
+            }
+
+            pre.dataset.enhanced = '1';
+        });
+    }
+
+    function createSpecItem(label, value) {
+        const item = document.createElement('div');
+        item.className = 'contest-spec-item';
+        item.innerHTML = `<strong>${label}:</strong> <span></span>`;
+        item.querySelector('span').textContent = value || '—';
+        return item;
+    }
+
+    function renderContestMeta(contest) {
+        const meta = document.getElementById('contestMeta');
+        meta.innerHTML = '';
+
+        const title = document.createElement('h2');
+        title.className = 'page-title-sm';
+        title.textContent = contest.contest_title || 'Новый контест';
+
+        const intro = document.createElement('p');
+        intro.textContent = contest.intro || 'Контест сгенерирован.';
+
+        meta.appendChild(title);
+        meta.appendChild(intro);
+    }
+
+    function renderTaskCard(task, index) {
+        const taskCard = document.createElement('article');
+        taskCard.className = 'contest-task-card';
+
+        const taskHeader = document.createElement('div');
+        taskHeader.className = 'contest-task-header';
+        const title = document.createElement('h3');
+        title.textContent = `${task.id || String.fromCharCode(65 + index)}. ${task.title || 'Задача'}`;
+        const badge = document.createElement('span');
+        badge.className = `contest-difficulty-badge contest-difficulty-${task.difficulty || 'medium'}`;
+        badge.textContent = (task.difficulty || 'medium').toUpperCase();
+        taskHeader.appendChild(title);
+        taskHeader.appendChild(badge);
+
+        const statement = document.createElement('div');
+        statement.className = 'contest-statement';
+        const normalized = window.normalizeMathDelimiters
+            ? window.normalizeMathDelimiters(task.statement_html || '')
+            : (task.statement_html || '');
+        statement.innerHTML = sanitizeHtml(convertCodeFencesToHtml(normalized));
+
+        const spec = document.createElement('div');
+        spec.className = 'contest-spec-grid';
+        spec.appendChild(createSpecItem('Входные данные', task.input_format));
+        spec.appendChild(createSpecItem('Выходные данные', task.output_format));
+        spec.appendChild(createSpecItem('Ограничения', task.constraints));
+
+        const examplesWrap = document.createElement('div');
+        examplesWrap.className = 'contest-examples';
+        const examplesTitle = document.createElement('h4');
+        examplesTitle.textContent = 'Примеры';
+        examplesWrap.appendChild(examplesTitle);
+
+        const examples = Array.isArray(task.examples) ? task.examples : [];
+        if (!examples.length) {
+            const empty = document.createElement('p');
+            empty.textContent = 'Примеры не указаны.';
+            examplesWrap.appendChild(empty);
+        } else {
+            examples.forEach((example, exampleIndex) => {
+                const card = document.createElement('div');
+                card.className = 'contest-example-card';
+                card.innerHTML = `<h5>Пример ${exampleIndex + 1}</h5>`;
+
+                const inputBlock = document.createElement('pre');
+                inputBlock.className = 'contest-io-block';
+                inputBlock.textContent = `Input:\n${example.input || ''}`;
+
+                const outputBlock = document.createElement('pre');
+                outputBlock.className = 'contest-io-block';
+                outputBlock.textContent = `Output:\n${example.output || ''}`;
+
+                card.appendChild(inputBlock);
+                card.appendChild(outputBlock);
+
+                if (example.explanation) {
+                    const explanation = document.createElement('p');
+                    explanation.className = 'contest-example-explanation';
+                    explanation.textContent = example.explanation;
+                    card.appendChild(explanation);
+                }
+                examplesWrap.appendChild(card);
+            });
+        }
+
+        const testsWrap = document.createElement('details');
+        testsWrap.className = 'contest-tests-details';
+        const testsSummary = document.createElement('summary');
+        const testsCount = Array.isArray(task.tests) ? task.tests.length : 0;
+        testsSummary.textContent = `Тесты для проверки (${testsCount})`;
+        testsWrap.appendChild(testsSummary);
+
+        const testsList = document.createElement('div');
+        testsList.className = 'contest-tests-list';
+        (Array.isArray(task.tests) ? task.tests : []).forEach((test, testIndex) => {
+            const item = document.createElement('div');
+            item.className = 'contest-test-item';
+
+            const title = document.createElement('h5');
+            title.textContent = `Тест ${testIndex + 1}${test.note ? ` — ${test.note}` : ''}`;
+
+            const testInput = document.createElement('pre');
+            testInput.className = 'contest-io-block';
+            testInput.textContent = `Input:\n${test.input || ''}`;
+
+            const testOutput = document.createElement('pre');
+            testOutput.className = 'contest-io-block';
+            testOutput.textContent = `Expected output:\n${test.output || ''}`;
+
+            item.appendChild(title);
+            item.appendChild(testInput);
+            item.appendChild(testOutput);
+            testsList.appendChild(item);
+        });
+        testsWrap.appendChild(testsList);
+
+        const runner = document.createElement('div');
+        runner.className = 'contest-runner';
+        runner.dataset.taskIndex = String(index);
+        runner.innerHTML = `
+            <h4>Проверка решения</h4>
+            <div class="contest-runner-controls">
+                <label>
+                    Язык:
+                    <select class="contest-language-select">
+                        <option value="python" selected>Python</option>
+                        <option value="cpp">C++</option>
+                    </select>
+                </label>
+                <button type="button" class="check-btn contest-run-btn">Запустить на тестах</button>
+            </div>
+            <textarea class="contest-code-input" spellcheck="false" autocomplete="off"></textarea>
+            <div class="contest-run-output"></div>
+        `;
+
+        const codeInput = runner.querySelector('.contest-code-input');
+        const languageSelect = runner.querySelector('.contest-language-select');
+        codeInput.value = starterCode.python;
+        languageSelect.addEventListener('change', () => {
+            if (!codeInput.value.trim()) {
+                codeInput.value = starterCode[languageSelect.value] || '';
+            }
+        });
+
+        taskCard.appendChild(taskHeader);
+        taskCard.appendChild(statement);
+        taskCard.appendChild(spec);
+        taskCard.appendChild(examplesWrap);
+        taskCard.appendChild(testsWrap);
+        taskCard.appendChild(runner);
+
+        if (window.renderMathInContainer) {
+            window.renderMathInContainer(taskCard);
+        }
+        enhanceCodeBlocks(taskCard);
+        return taskCard;
+    }
+
+    function renderContest(contest) {
+        currentContest = contest;
+        renderContestMeta(contest);
+
+        const tasksWrap = document.getElementById('contestTasks');
+        tasksWrap.innerHTML = '';
+
+        (contest.tasks || []).forEach((task, index) => {
+            tasksWrap.appendChild(renderTaskCard(task, index));
+        });
+    }
+
+    function renderRunOutput(container, payload) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!payload.success) {
+            const error = document.createElement('div');
+            error.className = 'feedback incorrect-feedback';
+            error.textContent = payload.error || 'Ошибка запуска.';
+            container.appendChild(error);
+
+            if (payload.compile_error) {
+                const compileBlock = document.createElement('pre');
+                compileBlock.className = 'contest-io-block';
+                compileBlock.textContent = payload.compile_error;
+                container.appendChild(compileBlock);
+            }
+            return;
+        }
+
+        const summary = document.createElement('div');
+        const allPassed = payload.passed === payload.total;
+        summary.className = allPassed ? 'feedback correct-feedback' : 'feedback neutral-feedback';
+        summary.textContent = allPassed
+            ? `✅ Все тесты пройдены: ${payload.passed}/${payload.total}`
+            : `⚠️ Пройдено ${payload.passed}/${payload.total} тестов`;
+        container.appendChild(summary);
+
+        const details = document.createElement('div');
+        details.className = 'contest-run-details';
+
+        (payload.results || []).forEach(result => {
+            const item = document.createElement('div');
+            item.className = `contest-run-test ${result.passed ? 'passed' : 'failed'}`;
+            const title = document.createElement('h5');
+            const statusLabel = result.status === 'wrong_answer'
+                ? 'Неверный ответ'
+                : result.status === 'runtime_error'
+                    ? 'Runtime error'
+                    : result.status === 'timeout'
+                        ? 'Timeout'
+                        : 'OK';
+            title.textContent = `Тест ${result.index}: ${statusLabel} (${result.time_ms} мс)`;
+            item.appendChild(title);
+
+            if (!result.passed) {
+                const input = document.createElement('pre');
+                input.className = 'contest-io-block';
+                input.textContent = `Input:\n${result.input || ''}`;
+
+                const expected = document.createElement('pre');
+                expected.className = 'contest-io-block';
+                expected.textContent = `Expected:\n${result.expected || ''}`;
+
+                const actual = document.createElement('pre');
+                actual.className = 'contest-io-block';
+                actual.textContent = `Actual:\n${result.actual || ''}`;
+
+                item.appendChild(input);
+                item.appendChild(expected);
+                item.appendChild(actual);
+
+                if (result.stderr) {
+                    const err = document.createElement('pre');
+                    err.className = 'contest-io-block';
+                    err.textContent = `Ошибка:\n${result.stderr}`;
+                    item.appendChild(err);
+                }
+            }
+
+            details.appendChild(item);
+        });
+        container.appendChild(details);
+    }
+
+    async function runTaskSolution(taskIndex, runnerElement) {
+        const task = (currentContest && currentContest.tasks && currentContest.tasks[taskIndex]) || null;
+        if (!task) return;
+
+        const language = runnerElement.querySelector('.contest-language-select').value;
+        const code = runnerElement.querySelector('.contest-code-input').value;
+        const outputWrap = runnerElement.querySelector('.contest-run-output');
+        const runButton = runnerElement.querySelector('.contest-run-btn');
+
+        outputWrap.innerHTML = '<div class="feedback neutral-feedback">⌛ Запуск тестов...</div>';
+        runButton.disabled = true;
+
+        try {
+            const response = await fetch('/api/contest/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    language,
+                    code,
+                    tests: task.tests || []
+                })
+            });
+            const payload = await response.json();
+            renderRunOutput(outputWrap, payload);
+        } catch (error) {
+            outputWrap.innerHTML = '<div class="feedback incorrect-feedback">Ошибка запуска. Попробуйте ещё раз.</div>';
+            console.error(error);
+        } finally {
+            runButton.disabled = false;
+        }
+    }
+
+    document.getElementById('contest-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const description = document.getElementById('contestDescription').value.trim();
+        const difficulty = document.getElementById('contestDifficulty').value;
+        const tasksCount = Number(document.getElementById('contestTasksCount').value || 4);
+        const topics = [...document.querySelectorAll('#contestTopics input[type="checkbox"]:checked')]
+            .map(input => input.value);
+
+        document.getElementById('contest-loading').classList.remove('hidden');
+        startContestLoadingHints();
+        document.getElementById('contest-result').classList.add('hidden');
+        form.classList.add('hidden');
+
+        try {
+            const response = await fetch('/api/contest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description,
+                    difficulty,
+                    tasks_count: tasksCount,
+                    topics
+                })
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Ошибка генерации контеста');
+            }
+
+            renderContest(payload);
+            document.getElementById('contest-result').classList.remove('hidden');
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Ошибка генерации контеста');
+            form.classList.remove('hidden');
+        } finally {
+            document.getElementById('contest-loading').classList.add('hidden');
+            stopContestLoadingHints();
+        }
+    });
+
+    document.getElementById('newContestBtn').addEventListener('click', () => {
+        currentContest = null;
+        document.getElementById('contestTasks').innerHTML = '';
+        document.getElementById('contestMeta').innerHTML = '';
+        document.getElementById('contest-result').classList.add('hidden');
+        document.getElementById('contest-form').classList.remove('hidden');
+        document.getElementById('contestDescription').focus();
+    });
+
+    document.addEventListener('click', (event) => {
+        const runBtn = event.target.closest('.contest-run-btn');
+        if (!runBtn) return;
+        const runner = runBtn.closest('.contest-runner');
+        if (!runner) return;
+        const taskIndex = Number(runner.dataset.taskIndex);
+        runTaskSolution(taskIndex, runner);
+    });
+</script>
+{% endblock %}

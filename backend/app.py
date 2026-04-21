@@ -12,6 +12,11 @@ try:
 except ImportError:
     from .ai_core import AICore
 
+try:
+    from contest_routes import create_contest_blueprint
+except ImportError:
+    from .contest_routes import create_contest_blueprint
+
 
 model = AICore()
 app = Flask(__name__)
@@ -445,6 +450,9 @@ def get_test_attempts_for_user(test_id, user_id, limit=30):
     ).fetchall()
 
 
+app.register_blueprint(create_contest_blueprint(model))
+
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -580,7 +588,15 @@ def chat():
 @app.route('/make_test', methods=['GET'])
 @login_required
 def make_test():
-    return render_template('generate_test.html')
+    mode = str(request.args.get('mode', 'test')).strip().lower()
+    initial_mode = 'contest' if mode == 'contest' else 'test'
+    return render_template('generate_test.html', initial_mode=initial_mode)
+
+
+@app.route('/make_contest', methods=['GET'])
+@login_required
+def make_contest():
+    return redirect(url_for('make_test', mode='contest'))
 
 
 @app.route('/profile', methods=['GET'])
