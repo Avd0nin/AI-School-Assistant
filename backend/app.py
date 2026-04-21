@@ -7,15 +7,8 @@ from urllib.parse import urlparse
 from flask import Flask, request, render_template, jsonify, redirect, session, url_for, g, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 
-try:
-    from ai_core import AICore
-except ImportError:
-    from .ai_core import AICore
-
-try:
-    from contest_routes import create_contest_blueprint
-except ImportError:
-    from .contest_routes import create_contest_blueprint
+from ai_core import AICore
+from contest_routes import create_contest_blueprint
 
 
 model = AICore()

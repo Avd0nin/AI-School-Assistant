@@ -9,20 +9,21 @@
         <p class="profile-lead">Логин: <strong>{{ current_user["username"] }}</strong></p>
     </div>
 
-    <div class="profile-tabs">
-        <a href="{{ url_for('profile', tab='summaries') }}" class="profile-tab {% if active_tab == 'summaries' %}is-active{% endif %}">
+    <div class="profile-tabs" id="profileTabs" data-active-tab="{{ active_tab }}">
+        <a href="{{ url_for('profile', tab='summaries') }}" class="profile-tab {% if active_tab == 'summaries' %}is-active{% endif %}" data-profile-tab="summaries" role="tab" aria-selected="{{ 'true' if active_tab == 'summaries' else 'false' }}">
             Конспекты
         </a>
-        <a href="{{ url_for('profile', tab='chats') }}" class="profile-tab {% if active_tab == 'chats' %}is-active{% endif %}">
+        <a href="{{ url_for('profile', tab='chats') }}" class="profile-tab {% if active_tab == 'chats' %}is-active{% endif %}" data-profile-tab="chats" role="tab" aria-selected="{{ 'true' if active_tab == 'chats' else 'false' }}">
             Чаты
         </a>
-        <a href="{{ url_for('profile', tab='tests') }}" class="profile-tab {% if active_tab == 'tests' %}is-active{% endif %}">
+        <a href="{{ url_for('profile', tab='tests') }}" class="profile-tab {% if active_tab == 'tests' %}is-active{% endif %}" data-profile-tab="tests" role="tab" aria-selected="{{ 'true' if active_tab == 'tests' else 'false' }}">
             Тесты
         </a>
     </div>
 
-    {% if active_tab == 'summaries' %}
-        <div class="profile-list">
+    <div class="profile-panels">
+        <section class="profile-panel {% if active_tab == 'summaries' %}is-active{% endif %}" data-profile-panel="summaries" aria-hidden="{{ 'false' if active_tab == 'summaries' else 'true' }}">
+            <div class="profile-list">
             {% if summaries %}
                 {% for item in summaries %}
                     <article class="profile-item">
@@ -37,11 +38,11 @@
             {% else %}
                 <p class="profile-empty">Пока нет сохранённых конспектов. Сгенерируйте первый в разделе «Конспекты».</p>
             {% endif %}
-        </div>
-    {% endif %}
+            </div>
+        </section>
 
-    {% if active_tab == 'chats' %}
-        <div class="profile-list">
+        <section class="profile-panel {% if active_tab == 'chats' %}is-active{% endif %}" data-profile-panel="chats" aria-hidden="{{ 'false' if active_tab == 'chats' else 'true' }}">
+            <div class="profile-list">
             {% if chats %}
                 {% for item in chats %}
                     <article class="profile-item">
@@ -56,11 +57,11 @@
             {% else %}
                 <p class="profile-empty">Пока нет диалогов. Откройте раздел «Чат», чтобы начать первый разговор.</p>
             {% endif %}
-        </div>
-    {% endif %}
+            </div>
+        </section>
 
-    {% if active_tab == 'tests' %}
-        <div class="profile-list">
+        <section class="profile-panel {% if active_tab == 'tests' %}is-active{% endif %}" data-profile-panel="tests" aria-hidden="{{ 'false' if active_tab == 'tests' else 'true' }}">
+            <div class="profile-list">
             {% if tests %}
                 {% for item in tests %}
                     <article class="profile-item">
@@ -82,7 +83,53 @@
             {% else %}
                 <p class="profile-empty">Пока нет тестов. Сгенерируйте тест в разделе «Тесты».</p>
             {% endif %}
-        </div>
-    {% endif %}
+            </div>
+        </section>
+    </div>
 </section>
+
+<script>
+(() => {
+    const tabsWrap = document.getElementById('profileTabs');
+    if (!tabsWrap) return;
+
+    const tabs = [...tabsWrap.querySelectorAll('[data-profile-tab]')];
+    const panels = [...document.querySelectorAll('[data-profile-panel]')];
+    const allowedTabs = new Set(['summaries', 'chats', 'tests']);
+
+    function setActiveTab(tab, pushState = true) {
+        const nextTab = allowedTabs.has(tab) ? tab : 'summaries';
+
+        tabs.forEach(link => {
+            const isActive = link.dataset.profileTab === nextTab;
+            link.classList.toggle('is-active', isActive);
+            link.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        panels.forEach(panel => {
+            const isActive = panel.dataset.profilePanel === nextTab;
+            panel.classList.toggle('is-active', isActive);
+            panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        });
+
+        tabsWrap.dataset.activeTab = nextTab;
+
+        if (pushState) {
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set('tab', nextTab);
+            window.history.replaceState({}, '', nextUrl);
+        }
+    }
+
+    tabs.forEach(link => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            setActiveTab(link.dataset.profileTab, true);
+        });
+    });
+
+    const initial = tabsWrap.dataset.activeTab || 'summaries';
+    setActiveTab(initial, false);
+})();
+</script>
 {% endblock %}

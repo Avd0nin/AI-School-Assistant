@@ -63,9 +63,6 @@
                     <li><a href="/make_summary">Конспекты</a></li>
                     <li><a href="/chat">Чат</a></li>
                     <li><a href="/make_test">Тесты</a></li>
-                    {% if current_user %}
-                        <li><a href="/profile">Профиль</a></li>
-                    {% endif %}
                     <li><a href="/help">Помощь</a></li>
                 </ul>
             </nav>
@@ -91,7 +88,7 @@
                     </span>
                 </button>
                 {% if current_user %}
-                    <span class="user-chip">{{ current_user["username"] }}</span>
+                    <a href="{{ url_for('profile') }}" class="user-chip" aria-label="Открыть профиль">{{ current_user["username"] }}</a>
                     <form method="post" action="{{ url_for('logout') }}" class="header-auth-form">
                         <button type="submit" class="nav-cta nav-cta-secondary">Выйти</button>
                     </form>
