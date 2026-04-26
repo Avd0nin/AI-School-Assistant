@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -16,6 +17,25 @@ COMPILE_TIMEOUT_SECONDS = 20
 def normalize_program_output(text):
     normalized = str(text or "").replace('\r\n', '\n').replace('\r', '\n')
     lines = [line.rstrip() for line in normalized.split('\n')]
+    while lines and lines[-1] == '':
+        lines.pop()
+    return '\n'.join(lines)
+
+
+def normalize_expected_output(text):
+    normalized = str(text or "").replace('\r\n', '\n').replace('\r', '\n')
+    normalized = normalized.replace("```", "").replace("`", "")
+    normalized = re.sub(r'(?im)^\s*(output|expected)\s*:\s*', '', normalized)
+    lines = []
+    for line in normalized.split('\n'):
+        cleaned = line.rstrip()
+        # Preserve negative numbers that sometimes arrive as "- 998".
+        cleaned = re.sub(r'^\s*-\s+(\d+(?:[.,]\d+)?)\s*$', r'-\1', cleaned)
+        cleaned = re.sub(r'^\s*[-*]\s+', '', cleaned)
+        cleaned = re.sub(r'^\s*\d+\.\s+', '', cleaned)
+        lines.append(cleaned)
+    while lines and lines[0] == '':
+        lines.pop(0)
     while lines and lines[-1] == '':
         lines.pop()
     return '\n'.join(lines)
@@ -123,7 +143,7 @@ def run_competitive_code(language, code, tests):
 
         for index, test in enumerate(limited_tests, start=1):
             input_data = str((test or {}).get("input", ""))
-            expected_output = str((test or {}).get("output", ""))
+            expected_output = normalize_expected_output((test or {}).get("output", ""))
             test_note = str((test or {}).get("note", "")).strip()
             started_at = time.perf_counter()
 
@@ -205,14 +225,14 @@ def run_competitive_code(language, code, tests):
         }
 
 
-def create_contest_blueprint(model):
+def create_contest_blueprint(model, save_contest_callback=None, current_user_id_callback=None):
     contest_bp = Blueprint("contest", __name__)
 
     @contest_bp.route('/api/contest', methods=['POST'])
     def generate_contest():
         data = request.get_json(silent=True) or {}
         description = str(data.get('description', '')).strip()
-        difficulty = str(data.get('difficulty', 'medium')).strip().lower()
+        difficulty_raw = str(data.get('difficulty', '5')).strip().lower()
         topics = data.get('topics', [])
 
         try:
@@ -225,12 +245,47 @@ def create_contest_blueprint(model):
             topics = []
 
         try:
+            difficulty_level = int(difficulty_raw)
+        except (TypeError, ValueError):
+            alias_level_map = {"easy": 2, "medium": 5, "hard": 7, "olymp": 10}
+            difficulty_level = alias_level_map.get(difficulty_raw, 5)
+        difficulty_level = max(1, min(10, difficulty_level))
+        difficulty_labels_ru = {
+            1: "очень легкий",
+            2: "легкий",
+            3: "ниже среднего",
+            4: "средний",
+            5: "средний+",
+            6: "выше среднего",
+            7: "сложный",
+            8: "очень сложный",
+            9: "предолимпиадный",
+            10: "олимпиадный",
+        }
+        difficulty_label = difficulty_labels_ru.get(difficulty_level, "средний")
+
+        user_id = current_user_id_callback() if callable(current_user_id_callback) else None
+        if not user_id:
+            return jsonify({"error": "Требуется авторизация"}), 401
+
+        try:
             contest_payload = model.create_contest_round(
                 description=description,
-                difficulty=difficulty,
+                difficulty=str(difficulty_level),
                 tasks_count=tasks_count,
                 topics=topics
             )
+            contest_payload["difficulty_label"] = difficulty_label
+            if callable(save_contest_callback):
+                contest_id = save_contest_callback(
+                    user_id=user_id,
+                    payload=contest_payload,
+                    description=description,
+                    difficulty=difficulty_label,
+                    tasks_count=tasks_count,
+                    duration_minutes=data.get("duration_minutes", 60),
+                )
+                contest_payload["contest_id"] = int(contest_id)
             return jsonify(contest_payload)
         except Exception as e:
             print(f"Ошибка генерации контеста: {str(e)}")

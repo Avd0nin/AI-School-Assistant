@@ -16,6 +16,10 @@
 
     <div class="result-actions">
         <a class="back-button" href="{{ url_for('profile', tab='summaries') }}">Назад к конспектам</a>
+        <a class="back-button back-button--chat-summary" href="{{ url_for('open_summary_chat', summary_id=summary['id']) }}">
+            Начать чат по конспекту
+        </a>
+        <a class="secondary-btn" href="{{ url_for('download_summary_pdf', summary_id=summary['id']) }}">Скачать PDF</a>
     </div>
 </section>
 

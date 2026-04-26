@@ -9,7 +9,10 @@
         <p class="profile-item-meta">{{ test["klass"] }} класс • Создан: {{ test["created_at"] }}</p>
     </div>
 
-    <div id="profileTestContent">{{ test["generated_html"] | safe }}</div>
+    <div class="result-actions result-actions--top">
+        <a class="back-button" href="{{ url_for('profile', tab='tests') }}">Назад к тестам</a>
+        <a class="back-button back-button--replay" href="{{ url_for('make_test', test_id=test['id']) }}">Пройти заново</a>
+    </div>
 
     <section class="profile-attempts">
         <h2 class="page-title-sm no-copy">История попыток</h2>
@@ -29,14 +32,28 @@
         {% endif %}
     </section>
 
-    <div class="result-actions">
-        <a class="back-button" href="{{ url_for('profile', tab='tests') }}">Назад к тестам</a>
-    </div>
+    <div id="profileTestContent" class="profile-test-readonly">{{ test["generated_html"] | safe }}</div>
+
 </section>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const testContainer = document.getElementById('profileTestContent');
+        if (testContainer) {
+            testContainer.querySelectorAll('.check-btn, .feedback, .correct-answer, .test-actions').forEach(el => el.remove());
+            testContainer.querySelectorAll('.answer-input').forEach(el => el.remove());
+            testContainer.querySelectorAll('.option-item input[type="radio"], .option-item input[type="checkbox"]').forEach(el => el.remove());
+            testContainer.querySelectorAll('input, textarea, select, button').forEach(el => {
+                el.disabled = true;
+                el.setAttribute('readonly', 'readonly');
+            });
+            testContainer.querySelectorAll('a').forEach(link => {
+                link.removeAttribute('href');
+            });
+            testContainer.querySelectorAll('.option-item').forEach(el => {
+                el.classList.remove('option-selected', 'correct-answer', 'incorrect-answer');
+            });
+        }
         if (window.renderMathInContainer) {
             window.renderMathInContainer(testContainer);
         }

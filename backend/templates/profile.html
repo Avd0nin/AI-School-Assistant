@@ -6,8 +6,52 @@
 <section class="page-card glass-card container profile-page">
     <div class="profile-head">
         <h1 class="page-title no-copy">Профиль</h1>
-        <p class="profile-lead">Логин: <strong>{{ current_user["username"] }}</strong></p>
+        <div class="profile-head-meta">
+            <p class="profile-lead">Логин: <strong>{{ current_user["username"] }}</strong></p>
+            <p class="profile-head-note">Зарегистрирован: {{ current_user["created_at"] }}</p>
+            <button type="button" id="openProfileDataModal" class="profile-data-btn">Управление данными</button>
+        </div>
     </div>
+
+    {% if deleted %}
+        <div class="profile-alert profile-alert--success">Данные профиля удалены. Аккаунт сохранён.</div>
+    {% endif %}
+    {% if delete_error %}
+        <div class="profile-alert profile-alert--error">Подтверждение не совпало. Для удаления введите «УДАЛИТЬ».</div>
+    {% endif %}
+
+    <section class="profile-stats">
+        <article class="profile-stat-card">
+            <p class="profile-stat-label">Конспекты</p>
+            <p class="profile-stat-value">{{ profile_stats["summaries_count"] }}</p>
+        </article>
+        <article class="profile-stat-card">
+            <p class="profile-stat-label">Чаты и сообщения</p>
+            <p class="profile-stat-value profile-stat-value--combo">
+                <span>{{ profile_stats["chat_threads_count"] }}</span>
+                <span class="profile-stat-slash">/</span>
+                <span>{{ profile_stats["chat_messages_count"] }}</span>
+            </p>
+        </article>
+        <article class="profile-stat-card">
+            <p class="profile-stat-label">Тесты и попытки</p>
+            <p class="profile-stat-value profile-stat-value--combo">
+                <span>{{ profile_stats["tests_count"] }}</span>
+                <span class="profile-stat-slash">/</span>
+                <span>{{ profile_stats["test_attempts_count"] }}</span>
+            </p>
+            <p class="profile-stat-meta">Средний: {{ profile_stats["test_avg_score"] }}% • Лучший: {{ profile_stats["test_best_score"] }}%</p>
+        </article>
+        <article class="profile-stat-card">
+            <p class="profile-stat-label">Контесты и попытки</p>
+            <p class="profile-stat-value profile-stat-value--combo">
+                <span>{{ profile_stats["contests_count"] }}</span>
+                <span class="profile-stat-slash">/</span>
+                <span>{{ profile_stats["contest_attempts_count"] }}</span>
+            </p>
+            <p class="profile-stat-meta">Лучший: {{ profile_stats["contest_best_score"] }}% • Решено задач: {{ profile_stats["contest_solved_total"] }}</p>
+        </article>
+    </section>
 
     <div class="profile-tabs" id="profileTabs" data-active-tab="{{ active_tab }}">
         <a href="{{ url_for('profile', tab='summaries') }}" class="profile-tab {% if active_tab == 'summaries' %}is-active{% endif %}" data-profile-tab="summaries" role="tab" aria-selected="{{ 'true' if active_tab == 'summaries' else 'false' }}">
@@ -18,6 +62,9 @@
         </a>
         <a href="{{ url_for('profile', tab='tests') }}" class="profile-tab {% if active_tab == 'tests' %}is-active{% endif %}" data-profile-tab="tests" role="tab" aria-selected="{{ 'true' if active_tab == 'tests' else 'false' }}">
             Тесты
+        </a>
+        <a href="{{ url_for('profile', tab='contests') }}" class="profile-tab {% if active_tab == 'contests' %}is-active{% endif %}" data-profile-tab="contests" role="tab" aria-selected="{{ 'true' if active_tab == 'contests' else 'false' }}">
+            Контесты
         </a>
     </div>
 
@@ -85,8 +132,61 @@
             {% endif %}
             </div>
         </section>
+
+        <section class="profile-panel {% if active_tab == 'contests' %}is-active{% endif %}" data-profile-panel="contests" aria-hidden="{{ 'false' if active_tab == 'contests' else 'true' }}">
+            <div class="profile-list">
+            {% if contests %}
+                {% for item in contests %}
+                    {% set tasks_count = item["tasks_count"] or 0 %}
+                    {% set attempts_count = item["attempts_count"] or 0 %}
+                    {% set task_word = 'задача' if tasks_count % 10 == 1 and tasks_count % 100 != 11 else ('задачи' if tasks_count % 10 in [2, 3, 4] and tasks_count % 100 not in [12, 13, 14] else 'задач') %}
+                    {% set attempt_word = 'попытка' if attempts_count % 10 == 1 and attempts_count % 100 != 11 else ('попытки' if attempts_count % 10 in [2, 3, 4] and attempts_count % 100 not in [12, 13, 14] else 'попыток') %}
+                    {% set raw_title = item["title"] or '' %}
+                    {% set title_lower = raw_title|lower %}
+                    {% set display_title = ('Контест на ' ~ tasks_count ~ ' ' ~ task_word) if (not raw_title or title_lower.startswith('контест:')) else raw_title %}
+                    <article class="profile-item">
+                        <h3 class="profile-item-title profile-item-title--contest">{{ display_title }}</h3>
+                        <p class="profile-item-meta">
+                            {{ tasks_count }} {{ task_word }} • Сложность: {{ item["difficulty_label"] or item["difficulty"] }} • Длительность: {{ item["duration_minutes"] }} мин • Создан: {{ item["created_at"] }}
+                        </p>
+                        {% if item["attempts_count"] %}
+                            <p class="profile-item-meta profile-item-meta--emphasis">
+                                {{ attempts_count }} {{ attempt_word }} • Лучший результат: {{ item["best_solved_count"] }}/{{ item["best_total_tasks"] }} ({{ item["best_score"] }}%)
+                            </p>
+                        {% else %}
+                            <p class="profile-item-meta">Пока нет сохранённых результатов по этому контесту.</p>
+                        {% endif %}
+                        <div class="profile-item-actions">
+                            <span class="profile-date">{% if item["best_attempt_at"] %}Лучшая попытка: {{ item["best_attempt_at"] }}{% else %}Попыток пока нет{% endif %}</span>
+                            <a class="secondary-btn" href="{{ url_for('view_contest', contest_id=item['id']) }}">Открыть</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="profile-empty">Пока нет контестов. Создайте первый в разделе «Тесты и контесты».</p>
+            {% endif %}
+            </div>
+        </section>
     </div>
+
 </section>
+
+<div id="profileDataModal" class="profile-modal hidden" aria-hidden="true">
+    <div class="profile-modal-card glass-card" role="dialog" aria-modal="true" aria-labelledby="profileDataModalTitle">
+        <h3 id="profileDataModalTitle" class="page-title-sm">Удаление данных профиля</h3>
+        <p class="profile-modal-text">Будут удалены все конспекты, чаты, тесты, контесты и история попыток. Аккаунт останется.</p>
+        <p class="profile-modal-hint">Профиль: {{ current_user["username"] }} • Регистрация: {{ current_user["created_at"] }}</p>
+        <form method="post" action="{{ url_for('delete_profile_data') }}" id="deleteProfileDataFormModal" class="profile-danger-form">
+            <label for="profileDeleteConfirmModal">Введите «УДАЛИТЬ» для подтверждения</label>
+            <input id="profileDeleteConfirmModal" name="confirm_text" type="text" required autocomplete="off" placeholder="УДАЛИТЬ">
+            <div class="profile-modal-actions">
+                <button type="button" id="closeProfileDataModal" class="secondary-btn">Отмена</button>
+                <button type="submit" class="danger-btn">Удалить данные</button>
+            </div>
+            <p id="profileDeleteInlineError" class="profile-inline-error hidden">Неверное слово. Введите «УДАЛИТЬ».</p>
+        </form>
+    </div>
+</div>
 
 <script>
 (() => {
@@ -95,10 +195,18 @@
 
     const tabs = [...tabsWrap.querySelectorAll('[data-profile-tab]')];
     const panels = [...document.querySelectorAll('[data-profile-panel]')];
-    const allowedTabs = new Set(['summaries', 'chats', 'tests']);
+    const allowedTabs = new Set(['summaries', 'chats', 'tests', 'contests']);
+    let switchTimer = null;
 
     function setActiveTab(tab, pushState = true) {
         const nextTab = allowedTabs.has(tab) ? tab : 'summaries';
+        tabsWrap.classList.add('is-switching');
+        if (switchTimer) {
+            window.clearTimeout(switchTimer);
+        }
+        switchTimer = window.setTimeout(() => {
+            tabsWrap.classList.remove('is-switching');
+        }, 260);
 
         tabs.forEach(link => {
             const isActive = link.dataset.profileTab === nextTab;
@@ -130,6 +238,94 @@
 
     const initial = tabsWrap.dataset.activeTab || 'summaries';
     setActiveTab(initial, false);
+})();
+
+(() => {
+    const openBtn = document.getElementById('openProfileDataModal');
+    const closeBtn = document.getElementById('closeProfileDataModal');
+    const modal = document.getElementById('profileDataModal');
+    const form = document.getElementById('deleteProfileDataFormModal');
+    const input = document.getElementById('profileDeleteConfirmModal');
+    const inlineError = document.getElementById('profileDeleteInlineError');
+    if (!openBtn || !closeBtn || !modal || !form || !input || !inlineError) return;
+    const MODAL_ANIMATION_MS = 240;
+
+    const clearHideTimer = () => {
+        const timerRaw = modal.dataset.hideTimerId;
+        if (!timerRaw) return;
+        const timerId = Number(timerRaw);
+        if (!Number.isNaN(timerId)) {
+            window.clearTimeout(timerId);
+        }
+        delete modal.dataset.hideTimerId;
+    };
+
+    const showAnimatedModal = () => {
+        clearHideTimer();
+        modal.classList.remove('hidden', 'is-closing');
+        modal.setAttribute('aria-hidden', 'false');
+        requestAnimationFrame(() => {
+            modal.classList.add('is-open');
+        });
+    };
+
+    const hideAnimatedModal = (immediate = false) => {
+        clearHideTimer();
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        if (immediate) {
+            modal.classList.remove('is-closing');
+            modal.classList.add('hidden');
+            return;
+        }
+        modal.classList.add('is-closing');
+        const timerId = window.setTimeout(() => {
+            modal.classList.remove('is-closing');
+            modal.classList.add('hidden');
+            clearHideTimer();
+        }, MODAL_ANIMATION_MS);
+        modal.dataset.hideTimerId = String(timerId);
+    };
+
+    const openModal = () => {
+        showAnimatedModal();
+        input.value = '';
+        inlineError.classList.add('hidden');
+        inlineError.textContent = 'Неверное слово. Введите «УДАЛИТЬ».';
+        window.setTimeout(() => input.focus(), 80);
+    };
+
+    const closeModal = () => {
+        hideAnimatedModal();
+    };
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    form.addEventListener('submit', (event) => {
+        const value = (input ? input.value : '').trim().toLowerCase();
+        if (value !== 'удалить' && value !== 'delete') {
+            event.preventDefault();
+            inlineError.classList.remove('hidden');
+            inlineError.textContent = 'Неверное слово. Введите «УДАЛИТЬ».';
+            input.focus();
+        }
+    });
+
+    input.addEventListener('input', () => {
+        inlineError.classList.add('hidden');
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
 })();
 </script>
 {% endblock %}

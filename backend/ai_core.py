@@ -2,6 +2,7 @@ from openai import OpenAI
 from flask import Flask, request, render_template, jsonify
 import json
 import re
+import html as html_utils
 
 
 class AICore:
@@ -52,6 +53,107 @@ class AICore:
                          cleaned, flags=re.IGNORECASE)
         return cleaned
 
+    def _normalize_option_text(self, raw_text):
+        text = html_utils.unescape(str(raw_text or ""))
+        text = re.sub(r'<[^>]+>', ' ', text)
+        text = text.replace('\xa0', ' ')
+        text = re.sub(r'\s+', ' ', text).strip().lower()
+        return text
+
+    def _extract_choice_option_groups(self, html):
+        if not html:
+            return []
+
+        groups = []
+        ul_pattern = re.compile(
+            r'<ul[^>]*class=["\'][^"\']*\boptions-list\b[^"\']*["\'][^>]*>([\s\S]*?)</ul>',
+            flags=re.IGNORECASE
+        )
+        li_pattern = re.compile(
+            r'<li[^>]*class=["\'][^"\']*\boption-item\b[^"\']*["\'][^>]*>([\s\S]*?)</li>',
+            flags=re.IGNORECASE
+        )
+        label_pattern = re.compile(r'<label[^>]*>([\s\S]*?)</label>', flags=re.IGNORECASE)
+        value_pattern = re.compile(r'\bvalue\s*=\s*["\']([^"\']+)["\']', flags=re.IGNORECASE)
+
+        for ul_match in ul_pattern.finditer(html):
+            ul_content = ul_match.group(1)
+            options = []
+            for li_match in li_pattern.finditer(ul_content):
+                li_html = li_match.group(1)
+                value_match = value_pattern.search(li_html)
+                option_value = (value_match.group(1).strip().lower() if value_match else "")
+
+                label_match = label_pattern.search(li_html)
+                option_text_raw = label_match.group(1) if label_match else li_html
+                option_text = self._normalize_option_text(option_text_raw)
+
+                options.append({
+                    "value": option_value,
+                    "text": option_text
+                })
+            if options:
+                groups.append(options)
+        return groups
+
+    def _test_html_has_invalid_choices(self, html):
+        option_groups = self._extract_choice_option_groups(html)
+        if not option_groups:
+            return True
+
+        for options in option_groups:
+            if len(options) != 4:
+                return True
+
+            correct_count = sum(1 for option in options if option["value"] == "correct")
+            if correct_count != 1:
+                return True
+
+            option_texts = [option["text"] for option in options]
+            if any(not text for text in option_texts):
+                return True
+            if len(set(option_texts)) != 4:
+                return True
+
+        return False
+
+    def _repair_test_html(self, html, subject, klass, theme):
+        candidate = self.normalize_html(html)
+        if not candidate:
+            return candidate
+
+        if not self._test_html_has_invalid_choices(candidate):
+            return candidate
+
+        for _ in range(2):
+            repair_prompt = f"""
+Исправь HTML теста по предмету "{subject}" для {klass} класса по теме "{theme}".
+
+Строгие правила:
+1) Верни только HTML, без markdown и комментариев.
+2) Оставь общий формат question-block/options-list/check-btn/feedback.
+3) В каждом вопросе с выбором:
+- ровно 4 варианта ответа;
+- ровно один вариант имеет value="correct";
+- три варианта имеют value="wrong";
+- все 4 варианта должны быть текстово разными (никаких дублей).
+4) Сохрани нумерацию вопросов и адекватную сложность.
+5) Тест должен содержать ровно 10 вопросов.
+
+Исходный HTML:
+{candidate}
+"""
+            repaired = self._chat(
+                messages=[{"role": "user", "content": repair_prompt}],
+                temperature=0.2,
+                max_tokens=4000
+            )
+            candidate = self.normalize_html(repaired)
+            if not self._test_html_has_invalid_choices(candidate):
+                return candidate
+
+        return candidate
+
     def _safe_json_parse(self, raw_content):
         if not raw_content:
             return None
@@ -73,6 +175,24 @@ class AICore:
         return None
 
     def _normalize_contest_payload(self, payload, fallback_tasks_count=3):
+        def sanitize_io_text(value):
+            raw = str(value or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+            raw = raw.replace("```", "").replace("`", "")
+            raw = re.sub(r'(?im)^\s*(input|output|expected|actual)\s*:\s*', '', raw)
+            lines = []
+            for line in raw.split("\n"):
+                cleaned = line.rstrip()
+                # Preserve negative numbers that sometimes arrive as "- 998".
+                cleaned = re.sub(r'^\s*-\s+(\d+(?:[.,]\d+)?)\s*$', r'-\1', cleaned)
+                cleaned = re.sub(r'^\s*[-*]\s+', '', cleaned)
+                cleaned = re.sub(r'^\s*\d+\.\s+', '', cleaned)
+                lines.append(cleaned)
+            while lines and lines[0] == "":
+                lines.pop(0)
+            while lines and lines[-1] == "":
+                lines.pop()
+            return "\n".join(lines)
+
         if not isinstance(payload, dict):
             payload = {}
 
@@ -94,6 +214,19 @@ class AICore:
             task_id = str(raw_task.get("id") or chr(letter_base + idx)).strip()[:8]
             title = str(raw_task.get("title") or f"Задача {task_id}").strip()
             difficulty = str(raw_task.get("difficulty") or "medium").strip().lower()
+            try:
+                difficulty_score = int(raw_task.get("difficulty_score", 0))
+            except (TypeError, ValueError):
+                difficulty_score = 0
+            if difficulty_score < 1 or difficulty_score > 10:
+                if difficulty == "easy":
+                    difficulty_score = 3
+                elif difficulty == "hard":
+                    difficulty_score = 8
+                elif difficulty == "olymp":
+                    difficulty_score = 10
+                else:
+                    difficulty_score = 5
             statement_html = self.normalize_html(str(raw_task.get("statement_html") or raw_task.get("statement") or "").strip())
             if not statement_html:
                 statement_html = "<p>Описание задачи не сгенерировано.</p>"
@@ -110,8 +243,8 @@ class AICore:
                 if not isinstance(example, dict):
                     continue
                 examples.append({
-                    "input": str(example.get("input", "")).rstrip(),
-                    "output": str(example.get("output", "")).rstrip(),
+                    "input": sanitize_io_text(example.get("input", "")),
+                    "output": sanitize_io_text(example.get("output", "")),
                     "explanation": str(example.get("explanation", "")).strip()
                 })
 
@@ -122,13 +255,13 @@ class AICore:
             for test in raw_tests[:25]:
                 if not isinstance(test, dict):
                     continue
-                input_text = str(test.get("input", ""))
-                output_text = str(test.get("output", ""))
+                input_text = sanitize_io_text(test.get("input", ""))
+                output_text = sanitize_io_text(test.get("output", ""))
                 if not input_text and not output_text:
                     continue
                 tests.append({
-                    "input": input_text.rstrip(),
-                    "output": output_text.rstrip(),
+                    "input": input_text,
+                    "output": output_text,
                     "note": str(test.get("note", "")).strip()
                 })
 
@@ -146,6 +279,7 @@ class AICore:
                 "id": task_id,
                 "title": title,
                 "difficulty": difficulty,
+                "difficulty_score": difficulty_score,
                 "statement_html": statement_html,
                 "input_format": input_format,
                 "output_format": output_format,
@@ -161,6 +295,7 @@ class AICore:
                     "id": letter,
                     "title": f"Задача {letter}",
                     "difficulty": "medium",
+                    "difficulty_score": 5,
                     "statement_html": "<p>Не удалось сгенерировать условие задачи. Повторите попытку.</p>",
                     "input_format": "См. условие.",
                     "output_format": "См. условие.",
@@ -226,10 +361,10 @@ class AICore:
         }
         difficulty_label = difficulty_label_map.get(difficulty_level, "средний")
         topics_text = ", ".join(safe_topics) if safe_topics else "без фиксированного списка"
-        tests_per_task = 10 if safe_tasks_count <= 5 else 6
+        tests_per_task = 12
 
         prompt = f"""
-Ты тренер по олимпиадному программированию.
+Ты тренер по олимпиадному программированию и автор контестов высокого качества.
 Сгенерируй JSON-объект контеста на {safe_tasks_count} задач.
 
 Параметры:
@@ -240,6 +375,10 @@ class AICore:
 
 Требования:
 1) Задачи должны быть самостоятельными, разного характера и строго соответствовать уровню сложности.
+1.1) У каждой задачи сложность обязана быть привязана к шкале 1-10:
+     easy: 1-3, medium: 4-6, hard: 7-8, olymp: 9-10.
+1.2) По набору задач сложность должна различаться: не делай все задачи одинаковыми.
+     Дай естественный разброс от проще к сложнее в рамках выбранного уровня.
 2) Стиль формулировок по уровню сложности: {style_rules}
 3) Избегай полного копирования одной и той же структуры условий во всех задачах.
 4) Для каждой задачи верни понятное условие в HTML (без html/head/body).
@@ -247,13 +386,25 @@ class AICore:
    - id (A, B, C...)
    - title
    - difficulty
+   - difficulty_score (целое число 1-10, согласованное с difficulty)
    - statement_html
    - input_format
    - output_format
    - constraints
    - examples: ровно 2 примера с input/output/explanation
-   - tests: ровно {tests_per_task} тестов, где у каждого input/output/note
-6) Тесты должны быть полезными: граничные случаи, типичные ошибки, сложные случаи.
+   - tests: не меньше {tests_per_task} тестов, где у каждого input/output/note
+6) Тесты должны реально проверять решение и ловить неверные алгоритмы.
+6.1) Для каждой задачи в tests обязательно смешай типы кейсов:
+     - обычные рабочие случаи
+     - граничные случаи
+     - сложные/стрессовые случаи
+     - случаи против типичных ошибок
+6.2) Не ограничивайся только minimum/maximum. Добавляй "живые" и разнообразные данные:
+     разные размеры входа, разные распределения значений, нетривиальные комбинации.
+6.3) В examples тоже не делай только тривиальные крайние точки:
+     примеры должны быть понятными, но содержательными и не однотипными.
+6.1) Поля input/output возвращай как чистый текст данных без markdown, без префиксов
+     "Input:", "Output:", без маркеров списка ("- ", "* ", "1. ").
 7) Вывод строго в формате JSON, без markdown и без комментариев.
 8) Ничего не сокращай и не обрывай JSON.
 
@@ -266,6 +417,7 @@ class AICore:
       "id": "A",
       "title": "Название",
       "difficulty": "easy|medium|hard|olymp",
+      "difficulty_score": 1,
       "statement_html": "<h2>...</h2><p>...</p>",
       "input_format": "Описание ввода",
       "output_format": "Описание вывода",
@@ -439,6 +591,7 @@ class AICore:
 - всегда делай 4 варианта ответа в вопросах с выбором;
 - у каждого вопроса с выбором должно быть ровно 4 варианта;
 - только один правильный вариант;
+- в рамках одного вопроса все 4 варианта должны быть текстово разными (дубли запрещены);
 - неправильные варианты должны быть правдоподобными, а не абсурдными;
 - чередуй типы вопросов: в основном тестовые с 4 вариантами, но можно добавить 2-3 открытых вопроса;
 - не делай тест слишком лёгким;
@@ -462,14 +615,15 @@ class AICore:
             max_tokens=4000
         )
 
-        return self.normalize_html(content)
+        normalized = self.normalize_html(content)
+        return self._repair_test_html(normalized, subject, klass, theme)
 
     def check_answer_with_ai(self, subject, question, user_answer, klass=None, theme=None):
         safe_subject = (subject or "предмет").strip()
         safe_theme = (theme or "").strip()
 
         prompt = f"""
-Ты строгий, но справедливый преподаватель по предмету "{safe_subject}".
+Ты внимательный и справедливый преподаватель по предмету "{safe_subject}".
 
 Проверь ответ ученика на вопрос.
 
@@ -484,15 +638,16 @@ class AICore:
 {user_answer}
 
 Твои правила проверки:
-1. Оцени строго по смыслу ответа.
-2. Верни только два варианта итоговой оценки: true или false.
-3. Если ответ верный по сути — is_correct = true.
-4. Если ответ неверный, неполный по сути или уходит от вопроса — is_correct = false.
-5. Если is_correct = false, НЕ ПИШИ правильный ответ.
-6. Если is_correct = false, объясни кратко и понятно, почему ответ не засчитан.
-7. Если is_correct = true, объясни кратко, почему ответ засчитан.
-8. Не пиши "примерно правильно".
-9. Не раскрывай эталонный ответ при ошибке.
+1. Оцени ответ по смыслу, но без излишней жёсткости.
+2. Засчитывай ответ как верный, если по сути мысль правильная:
+   допускаются мелкие неточности формулировки, краткость, синонимы и небольшие опечатки.
+3. Не требуй дословного совпадения с учебником.
+4. Если ключевая идея неверная или ответ уходит от вопроса — is_correct = false.
+5. Верни только два варианта итоговой оценки: true или false.
+6. Если is_correct = false, НЕ ПИШИ правильный ответ.
+7. Если is_correct = false, объясни кратко и понятно, что именно не так.
+8. Если is_correct = true, кратко объясни, почему ответ засчитан.
+9. Не пиши "примерно правильно".
 10. Верни строго JSON и ничего кроме JSON.
 
 Формат ответа:

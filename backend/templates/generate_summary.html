@@ -158,13 +158,21 @@
                     const profileAction = summaryId
                         ? `<a href="/profile/summary/${summaryId}" class="back-button">Открыть в профиле</a>`
                         : '';
+                    const summaryChatAction = summaryId
+                        ? `<a href="/profile/summary/${summaryId}/chat" class="back-button back-button--chat-summary">Начать чат по конспекту</a>`
+                        : '';
+                    const summaryPdfAction = summaryId
+                        ? `<a href="/profile/summary/${summaryId}/download_pdf" class="secondary-btn">Скачать PDF</a>`
+                        : '';
                     document.getElementById('result').innerHTML = `
                         <article class="summary-article">${cleanHtml}</article>
                         <div class="result-actions">
                             <button class="back-button" onclick="goBack()">
                                 Назад
                             </button>
+                            ${summaryChatAction}
                             ${profileAction}
+                            ${summaryPdfAction}
                         </div>
                     `;
                     document.getElementById('result').classList.remove('hidden');
